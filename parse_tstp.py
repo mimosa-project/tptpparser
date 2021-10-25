@@ -334,8 +334,8 @@ class ParseTstp():
                 output += s.replace(" ", "")
         return output
 
-    def storage_tstp_analysis2json(self):
-        """storage_tptp_analysis2json
+    def storage_tstp_parse2json(self):
+        """storage_tptp_parse2json
         解析結果をjsonで保存する
         input：problems_file
         output：保存したいファイル名
