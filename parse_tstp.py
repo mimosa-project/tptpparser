@@ -335,7 +335,7 @@ class ParseTstp():
         return output
 
     def storage_tstp_parse2json(self):
-        """storage_tptp_parse2json
+        """storage_tstp_parse2json
         解析結果をjsonで保存する
         input：problems_file
         output：保存したいファイル名
