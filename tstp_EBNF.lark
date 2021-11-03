@@ -12,7 +12,7 @@ fof_annotated        : "fof" "(" name "," formula_role "," fof_formula annotatio
 cnf_annotated        : "cnf" "(" name "," formula_role "," cnf_formula annotations ")" "."
 annotations          :  "," source optional_info | null
 
-formula_role         : lower_word
+formula_role         : LOWER_WORD
 //formula_role         : axiom | hypothesis | definition | assumption | lemma | 
                     //  theorem | corollary | conjecture |  negated_conjecture |
                     //  plain | type | fi_domain | fi_functors | fi_predicates | unknown
@@ -23,7 +23,7 @@ thf_binary_formula   : thf_binary_nonassoc | thf_binary_assoc | thf_binary_type
 
 thf_binary_nonassoc  : thf_unit_formula nonassoc_connective thf_unit_formula
 thf_binary_assoc     : thf_or_formula | thf_and_formula | thf_apply_formula
-thf_or_formula       : thf_unit_formula vline thf_unit_formula | thf_or_formula vline thf_unit_formula
+thf_or_formula       : thf_unit_formula VLINE thf_unit_formula | thf_or_formula VLINE thf_unit_formula
 thf_and_formula      : thf_unit_formula "&" thf_unit_formula | thf_and_formula "&" thf_unit_formula
 
 thf_apply_formula    : thf_unit_formula "@" thf_unit_formula | thf_apply_formula "@" thf_unit_formula
@@ -75,11 +75,11 @@ th1_quantified_type  : "!>" "[" thf_variable_list "]" ":" thf_unitary_type
 thf_apply_type       : thf_apply_formula
 thf_binary_type      : thf_mapping_type | thf_xprod_type | thf_union_type 
 
-thf_mapping_type     : thf_unitary_type arrow thf_unitary_type | thf_unitary_type arrow thf_mapping_type
+thf_mapping_type     : thf_unitary_type ARROW thf_unitary_type | thf_unitary_type ARROW thf_mapping_type
 
-thf_xprod_type       : thf_unitary_type star thf_unitary_type | thf_xprod_type star thf_unitary_type
+thf_xprod_type       : thf_unitary_type STAR thf_unitary_type | thf_xprod_type STAR thf_unitary_type
 
-thf_union_type       : thf_unitary_type plus thf_unitary_type | thf_union_type plus thf_unitary_type
+thf_union_type       : thf_unitary_type PLUS thf_unitary_type | thf_union_type PLUS thf_unitary_type
 
 thf_subtype          : untyped_atom subtype_sign atom
 
@@ -100,7 +100,7 @@ tff_logic_formula    : tff_unitary_formula | tff_unary_formula | tff_binary_form
 tff_binary_formula   : tff_binary_nonassoc | tff_binary_assoc
 tff_binary_nonassoc  : tff_unit_formula nonassoc_connective tff_unit_formula
 tff_binary_assoc     : tff_or_formula | tff_and_formula
-tff_or_formula       : tff_unit_formula vline tff_unit_formula | tff_or_formula vline tff_unit_formula
+tff_or_formula       : tff_unit_formula VLINE tff_unit_formula | tff_or_formula VLINE tff_unit_formula
 tff_and_formula      : tff_unit_formula "&" tff_unit_formula | tff_and_formula "&" tff_unit_formula
 tff_unit_formula     : tff_unitary_formula | tff_unary_formula | tff_defined_infix
 tff_preunit_formula  : tff_unitary_formula | tff_prefix_unary
@@ -150,8 +150,8 @@ tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantifi
 tff_unitary_type     : tff_atomic_type | "(" tff_xprod_type ")"
 tff_atomic_type      : type_constant | defined_type | variable | type_functor "(" tff_type_arguments ")" | "(" tff_atomic_type ")" | tfx_tuple_type 
 tff_type_arguments   : tff_atomic_type | tff_atomic_type "," tff_type_arguments
-tff_mapping_type     : tff_unitary_type arrow tff_atomic_type
-tff_xprod_type       : tff_unitary_type star tff_atomic_type | tff_xprod_type star tff_atomic_type
+tff_mapping_type     : tff_unitary_type ARROW tff_atomic_type
+tff_xprod_type       : tff_unitary_type STAR tff_atomic_type | tff_xprod_type STAR tff_atomic_type
 
 tfx_tuple_type       : "[" tff_type_list "]"
 tff_type_list        : tff_top_level_type | tff_top_level_type "," tff_type_list
@@ -172,7 +172,7 @@ fof_binary_formula   : fof_binary_nonassoc | fof_binary_assoc
 fof_binary_nonassoc  : fof_unit_formula nonassoc_connective fof_unit_formula
 
 fof_binary_assoc     : fof_or_formula | fof_and_formula
-fof_or_formula       : fof_unit_formula vline fof_unit_formula | fof_or_formula vline fof_unit_formula
+fof_or_formula       : fof_unit_formula VLINE fof_unit_formula | fof_or_formula VLINE fof_unit_formula
 fof_and_formula      : fof_unit_formula "&" fof_unit_formula | fof_and_formula "&" fof_unit_formula
 fof_unary_formula    : fof_quantifier_tilde_exclamation fof_unit_formula | fof_quantifier_tilde_exclamation fof_unit_formula | unary_connective fof_unit_formula | fof_infix_unary | 
 
@@ -213,7 +213,7 @@ fof_formula_tuple    : "{}" | "{" fof_formula_tuple_list "}"
 fof_formula_tuple_list : fof_logic_formula |  fof_logic_formula "," fof_formula_tuple_list
 
 cnf_formula          : disjunction | "(" disjunction ")"
-disjunction          : literal | disjunction vline literal
+disjunction          : literal | disjunction VLINE literal
 literal              : fof_atomic_formula | "~" fof_atomic_formula | fof_infix_unary
 
 thf_quantifier       : fof_quantifier | th0_quantifier | th1_quantifier
@@ -229,7 +229,7 @@ fof_quantifier_question : "?"
 fof_quantifier_tilde_exclamation : "~!"
 
 nonassoc_connective  : double_left_right_arrow | double_arrow | double_less_sign | left_right_arrow | not_or | not_and
-assoc_connective     : vline | assoc_connective_and
+assoc_connective     : VLINE | assoc_connective_and
 assoc_connective_and : "&"
 
 unary_connective     : "~"
@@ -247,7 +247,7 @@ assignment           : ":="
 type_constant        : type_functor
 type_functor         : atomic_word
 defined_type         : atomic_defined_word
-//defined_type         : "$"otype | "$"o | "$"itype | "$"i | "$"ttype | "$"real | "$"rat | "$"int
+//defined_type         : "$"otype | "$"o | "$"itype | "$"i | "$"ttype | "$"REAL | "$"rat | "$"int
 
 system_type          : atomic_system_word
 
@@ -276,10 +276,10 @@ system_functor       : atomic_system_word
 defined_constant     : defined_functor
 defined_functor      : atomic_defined_word
 //defined_functor      : "$"uminus | "$"sum | "$"difference | "$"product | "$"quotient | "$"quotient_e | "$"quotient_t | "$"quotient_f | "$"remainder_e | "$"remainder_t | "$"remainder_f 
-//                        | "$"floor | "$"ceiling | "$"truncate | "$"round | "$"to_int | "$"to_rat | "$"to_real
+//                        | "$"floor | "$"ceiling | "$"truncate | "$"round | "$"to_int | "$"to_rat | "$"to_REAL
 th1_defined_term     : "!!" | "??" | "@@+" | "@@-" | "@="
-defined_term         : number | distinct_object
-variable             : upper_word | upper_word ":" dollar_word
+defined_term         : number | DISTINCT_OBJECT
+variable             : UPPER_WORD | UPPER_WORD ":" DOLLAR_WORD
 
 source               : general_term
 //source               : dag_source | internal_source | external_source | unknown | [sources]
@@ -339,7 +339,7 @@ formula_selection    : "," "[" name_list "]" | null
 name_list            : name | name "," name_list
 
 general_term         : general_data | general_data ":" general_term | general_list
-general_data         : atomic_word | general_function | variable | number | distinct_object | formula_data
+general_data         : atomic_word | general_function | variable | number | DISTINCT_OBJECT | formula_data
 general_function     : atomic_word "(" general_terms ")"
 
 //general_data         : "bind" "("variable "," formula_data")" | "bind_type" "("variable "," bound_type")"
@@ -348,15 +348,15 @@ formula_data         : "$thf(" thf_formula ")" | "$tff(" tff_formula ")" | "$fof
 general_list         : "[]" | "[" general_terms "]"
 general_terms        : general_term | general_term "," general_terms
 
-name                 : atomic_word | integer
+name                 : atomic_word | INTEGER
 
-atomic_word          : lower_word |  single_quoted
+atomic_word          : LOWER_WORD |  SINGLE_QUOTED
 
-atomic_defined_word  : dollar_word
-atomic_system_word   : dollar_dollar_word
-number               : integer | rational | real
+atomic_defined_word  : DOLLAR_WORD
+atomic_system_word   : DOLLAR_DOLLAR_WORD
+number               : INTEGER | RATIONAL | REAL
 
-file_name            :  single_quoted
+file_name            :  SINGLE_QUOTED
 null                 :
 
 comment              : comment_line|comment_block
@@ -365,38 +365,38 @@ comment_block        : ["/"]["*"]not_star_slash["*"]["*"]*["/"]
 not_star_slash       : "("["^"*]*["*"]["*"]*["^""/"*]")"*["^"*]*
 
 
-single_quoted        : SINGLE_QUOTE SQ_CHAR SQ_CHAR * SINGLE_QUOTE
+SINGLE_QUOTED        : SINGLE_QUOTE SQ_CHAR SQ_CHAR * SINGLE_QUOTE
 
-distinct_object      : DOUBLE_QUOTE DO_CHAR * DOUBLE_QUOTE
+DISTINCT_OBJECT      : DOUBLE_QUOTE DO_CHAR * DOUBLE_QUOTE
 
-dollar_word          : DOLLAR lower_word
-dollar_dollar_word   : DOLLAR DOLLAR lower_word
-upper_word           : UPPER_ALPHA ALPHA_NUMERIC *
-lower_word           : LOWER_ALPHA ALPHA_NUMERIC *
+DOLLAR_WORD          : DOLLAR LOWER_WORD
+DOLLAR_DOLLAR_WORD   : DOLLAR DOLLAR LOWER_WORD
+UPPER_WORD           : UPPER_ALPHA ALPHA_NUMERIC *
+LOWER_WORD           : LOWER_ALPHA ALPHA_NUMERIC *
 
-vline                : /[|]/
-star                 : /[*]/
-plus                 : /[+]/
-arrow                : /[>]/
-less_sign            : /[<]/
+VLINE                : /[|]/
+STAR                 : /[*]/
+PLUS                 : /[+]/
+ARROW                : /[>]/
+LESS_SIGN            : /[<]/
 
-real                 : ( signed_real | unsigned_real )
-signed_real          : SIGN unsigned_real
-unsigned_real        : ( decimal_fraction | decimal_exponent )
-rational             : ( signed_rational | unsigned_rational )
-signed_rational      : SIGN unsigned_rational
-unsigned_rational    : decimal SLASH positive_decimal
-integer              : ( signed_integer | unsigned_integer )
-signed_integer       : SIGN unsigned_integer
-unsigned_integer     : decimal
-decimal              : ( ZERO_NUMERIC | positive_decimal )
-positive_decimal     : NON_ZERO_NUMERIC NUMERIC*
-decimal_exponent     : ( decimal | decimal_fraction ) EXPONENT exp_integer
-decimal_fraction     : decimal dot_decimal
-dot_decimal          : DOT NUMERIC NUMERIC*
-exp_integer          : ( signed_exp_integer | unsigned_exp_integer )
-signed_exp_integer   : SIGN unsigned_exp_integer
-unsigned_exp_integer : NUMERIC NUMERIC*
+REAL                 : ( SIGNED_REAL | UNSIGNED_REAL )
+SIGNED_REAL          : SIGN UNSIGNED_REAL
+UNSIGNED_REAL        : ( DECIMAL_FRACTION | DECIMAL_EXPONENT )
+RATIONAL             : ( SIGNED_RATIONAL | UNSIGNED_RATIONAL )
+SIGNED_RATIONAL      : SIGN UNSIGNED_RATIONAL
+UNSIGNED_RATIONAL    : DECIMAL SLASH POSITIVE_DECIMAL
+INTEGER              : ( SIGNED_INTEGER | UNSIGNED_INTEGER )
+SIGNED_INTEGER       : SIGN UNSIGNED_INTEGER
+UNSIGNED_INTEGER     : DECIMAL
+DECIMAL              : ( ZERO_NUMERIC | POSITIVE_DECIMAL )
+POSITIVE_DECIMAL     : NON_ZERO_NUMERIC NUMERIC*
+DECIMAL_EXPONENT     : ( DECIMAL | DECIMAL_FRACTION ) EXPONENT EXP_INTEGER
+DECIMAL_FRACTION     : DECIMAL DOT_DECIMAL
+DOT_DECIMAL          : DOT NUMERIC NUMERIC*
+EXP_INTEGER          : ( SIGNED_EXP_INTEGER | UNSIGNED_EXP_INTEGER )
+SIGNED_EXP_INTEGER   : SIGN UNSIGNED_EXP_INTEGER
+UNSIGNED_EXP_INTEGER : NUMERIC NUMERIC*
 
 
 PERCENTAGE_SIGN      : /[%]/
