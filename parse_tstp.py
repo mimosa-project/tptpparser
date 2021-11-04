@@ -20,7 +20,7 @@ class ParseTstp():
         self.lark_file = lark_file
 
     def create_tree_graph(self, node, output):
-        """create_graph
+        """create_tree_graph
         larkで作成した木をグラフ化してpngで保存する関数
         node: larkで作成した木
         output：保存する名前
