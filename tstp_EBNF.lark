@@ -1,4 +1,7 @@
-tptp_file            : tptp_input*
+%ignore COMMENT
+%ignore /[ \t\f\r\n]+/
+
+tptp_root            : tptp_input*
 tptp_input           : annotated_formula | include | VIEWABLE_CHAR
 
 annotated_formula    : thf_annotated | tff_annotated | tcf_annotated | fof_annotated | cnf_annotated | tpi_annotated
@@ -350,7 +353,7 @@ general_terms        : general_term | general_term "," general_terms
 
 name                 : atomic_word | INTEGER
 
-atomic_word          : LOWER_WORD |  SINGLE_QUOTED
+atomic_word          : LOWER_WORD | SINGLE_QUOTED
 
 atomic_defined_word  : DOLLAR_WORD
 atomic_system_word   : DOLLAR_DOLLAR_WORD
@@ -359,10 +362,10 @@ number               : INTEGER | RATIONAL | REAL
 file_name            :  SINGLE_QUOTED
 null                 :
 
-comment              : comment_line|comment_block
-comment_line         : ["%"] PRINTABLE_CHAR* VIEWABLE_CHAR
-comment_block        : ["/"]["*"]not_star_slash["*"]["*"]*["/"]
-not_star_slash       : "("["^"*]*["*"]["*"]*["^""/"*]")"*["^"*]*
+COMMENT              : COMMENT_LINE|COMMENT_BLOCK
+COMMENT_LINE         : /[%]/ PRINTABLE_CHAR*
+COMMENT_BLOCK        : /[\/]//[*]/NOT_STAR_SLASH/[*]//[*]/*/[\/]/
+NOT_STAR_SLASH       : "("/[^*]/*/[*]//[*]/*/[^\/*]/")"*/[^*]/*
 
 
 SINGLE_QUOTED        : SINGLE_QUOTE SQ_CHAR SQ_CHAR * SINGLE_QUOTE
