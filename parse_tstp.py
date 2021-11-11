@@ -75,7 +75,7 @@ class ParseTstp():
             node (Tree): 判定したいnode
 
         Returns:
-            len (node.children) == 1 or node.data == "tptp_root"(bool): 省略するならTrue、そうでないならFalse
+            len (node.children) == 1 or node.data == "tptp_root" (bool): 省略するならTrue、そうでないならFalse
         """
         return len(node.children) == 1 or node.data == "tptp_root"
 

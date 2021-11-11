@@ -2,12 +2,21 @@ import subprocess
 
 
 class VampireExecutor:
+    """VampireExecutor
+    
+    vampireを実行して、その結果からtstpファイルを作成するクラス
+
+    Attributes:
+        vampire_path (str): vampireの実行ファイルのパス
+    """
     def __init__(self, vampire_path):
         self.vampire_path = vampire_path
 
     def run(self, problem_path, tstp_path):
         """run
-        vampireの実行結果を返す関数
+
+        vampireを実行し、その結果からtstpファイルを作成する関数
+        
         Args:
             problem_path (str): 自動定理証明するproblemファイルのパス
             tstp_path (str): 保存するtstpファイルのパス
