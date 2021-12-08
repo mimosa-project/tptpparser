@@ -9,6 +9,11 @@ SYMBOL_TO_NODE_NAME = {v: k for k, v in NODE_NAME_TO_SYMBOL.items()}
 
 QUANTIFIER = ("!", "?", "^", "@+", "@-", "!>", "?*")
 
+NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
+
+NODE_NAME_INCLUDED_FUNCTOR = ("fof_defined_plain_term", "fof_plain_term", "fof_system_term",
+                              "general_function", "tff_plain_atomic", "tff_defined_plain", "tff_atomic_type", "thf_fof_function")
+
 
 class ParseTstp():
     """Parse_tstp
@@ -66,53 +71,59 @@ class ParseTstp():
             G.edge(str(i), str(j))
         G.render(png_path)
 
-    def __should_omit_cst(self, node):
-        """__should_omit_cst
-
-        抽象構文木を作成する際にnodeを飛ばすべきかどうかを判定する関数
-
-        Args:
-            node (Tree): 判定したいnode
-
-        Returns:
-            len (node.children) == 1 or node.data == "tptp_root" (bool): 省略するならTrue、そうでないならFalse
+    def __omit_node_having_single_child(self, cst, tree=None):
         """
-        return len(node.children) == 1 or node.data == "tptp_root"
 
-    def convert_cst2ast(self, cst, ast=None):
-        """convert_cst2ast
-
-        構文木から子が一つしかないノードを飛ばすことで抽象構文木を作成して作成した抽象構文木を返す関数
+        構文木から子が一つしかないノードを飛ばした木を作成してそれを返す関数
 
         Args:
             cst (Tree): larkで作成した木(tree関数の返り値)
-            ast (Tree): 新しく作る抽象構文木、最初はTree("tptp_root", [])
+            tree (Tree): 構文木から子が一つしかないノードを飛ばした木、最初はTree("tptp_root", [])
+                         再帰呼び出しの場合はtreeを指定してtreeを変更して抽象構文木を作っていく
+                         そうでない場合は省略する
 
         Returns:
-            ast (Tree): 最終的に作られた抽象構文木
+            omitted_tree (Tree): 構文木から子が一つしかないノードを飛ばした木
         """
-        if ast is None:
-            ast = Tree("tptp_root", [])
+        omitted_tree = tree
+        if omitted_tree is None:
+            omitted_tree = Tree("tptp_root", [])
         if type(cst) == Tree:
-            if not self.__should_omit_cst(cst):
+            if not (len(cst.children) == 1 or cst.data == "tptp_root"):
                 if cst.data in NODE_NAME_TO_SYMBOL:
                     cst.data = NODE_NAME_TO_SYMBOL[cst.data]
-                ast.children.append(Tree(cst.data, []))
+                omitted_tree.children.append(Tree(cst.data, []))
             for child in cst.children:
-                if not self.__should_omit_cst(cst):
-                    self.convert_cst2ast(child, ast.children[-1])
+                if len(cst.children) == 1 or cst.data == "tptp_root":
+                    self.__omit_node_having_single_child(child, omitted_tree)
                 else:
-                    self.convert_cst2ast(child, ast)
-            # =などの演算子を上にあげる処理
-            if len(ast.children) == 3:
-                if type(ast.children[1]) == Tree:
-                    if ast.children[1].data in SYMBOL_TO_NODE_NAME:
-                        ast.data = ast.children[1].data
-                        ast.children.pop(1)
+                    self.__omit_node_having_single_child(
+                        child, omitted_tree.children[-1])
+        # Tokenの場合
         else:
-            ast.children.append(cst)
+            omitted_tree.children.append(cst)
 
-        return ast
+        return omitted_tree
+
+    def __move_operator_to_parent(self, omitted_tree):
+        """__move_operator_to_parent
+
+        子が一つしかないノードを飛ばした木から二項演算子を上に上げることで抽象構文木を改良する関数
+
+        Args:
+            omitted_tree (Tree): 子が一つしかないノードを飛ばした木
+
+        Returns:
+            omitted_tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
+        """
+        if type(omitted_tree) == Tree:
+            if len(omitted_tree.children) == 3 and type(omitted_tree.children[1]) == Tree and omitted_tree.children[1].data in SYMBOL_TO_NODE_NAME:
+                omitted_tree.data = omitted_tree.children[1].data
+                omitted_tree.children.pop(1)
+            for child in omitted_tree.children:
+                self.__move_operator_to_parent(child)
+
+        return omitted_tree
 
     def __move_variable_to_child_of_quantifier(self, node):
         """__move_variable_to_child_of_quantifier
@@ -125,15 +136,17 @@ class ParseTstp():
         """
         quantifier_index = 0
         while True:
-            # variableまたはformulaの場合
+            # variableまたはquantifier、formulaの場合
             if type(node.children[quantifier_index+1]) == Tree:
                 # variableなら追加
                 if "variable" in node.children[quantifier_index+1].data:
                     node.children[quantifier_index].children.append(
                         node.children[quantifier_index+1])
                     node.children.pop(quantifier_index+1)
+                # quantifierならこのquantifier以降の変数をこのquantifierの子に追加する
                 elif node.children[quantifier_index+1].data in QUANTIFIER:
                     quantifier_index += 1
+                # formulaの場合は終了する
                 else:
                     break
             # 変数名の場合
@@ -142,97 +155,166 @@ class ParseTstp():
                     node.children[quantifier_index+1])
                 node.children.pop(quantifier_index+1)
 
-    def upgrade_ast(self, ast, upgraded_ast=None):
-        """upgrade_ast
+    def __should_omit_node(self, node):
+        """__should_omit_node
 
-        convert_cst2ast関数を実行して子が一つしかないnodeを省略した抽象構文木を
+        省略するノードかどうかを判定する関数
+
+        Args:
+            node (Tree): 判定したいノード
+        Returns:
+            2 <= len(node.children) <= 3 and should_omit_node_name (bool): 省略するときはTrueそうでないならFalse
+        """
+        if (type(node) != Tree):
+            return False
+        should_omit_node_name = not(
+            node.data in QUANTIFIER or node.data in NODE_NAME_INCLUDED_FUNCTOR or node.data in NONASSOC_CONNECTIVE or node.data in SYMBOL_TO_NODE_NAME)
+        return 2 <= len(node.children) <= 3 and should_omit_node_name
+
+    def __upgrade_ast(self, ast):
+        """__upgrade_ast
+
+        子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木を
         意味のないnodeを省略したりfunctor等を上に上げる等で抽象構文木を改良してその抽象構文木を返す関数
 
         Args:
-            ast (Tree): convert_cst2ast関数を実行後のnode
-            upgraded_ast (Tree): 改良される抽象構文木、最初はTree("tptp_root", [])
+            ast (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
 
         Returns:
-            upgraded_ast (Tree): 最終的な改良された抽象構文木
+            ast (Tree): 改良された抽象構文木
         """
-        if upgraded_ast is None:
-            upgraded_ast = Tree("tptp_root", [])
-        node_name_included_functor = ("fof_defined_plain_term", "fof_plain_term", "fof_system_term",
-                                      "general_function", "tff_plain_atomic", "tff_defined_plain", "tff_atomic_type", "thf_fof_function")
-        nonassoc_connective = ("<=>", "=>", "<=", "<~>", "~|", "~&")
-        is_not_omit_node = False
-        is_tilde = False
-        if type(ast) == Tree:
-            if ast.data in nonassoc_connective:
-                upgraded_ast.children.append(
-                    Tree(ast.data, [Tree("formula", []), Tree("formula", [])]))
-                self.upgrade_ast(
-                    ast.children[0], upgraded_ast.children[0].children[0])
-                self.upgrade_ast(
-                    ast.children[1], upgraded_ast.children[0].children[1])
-                return upgraded_ast
-            elif ast.data in SYMBOL_TO_NODE_NAME or ast.data == "variable" or not ast.children:
-                upgraded_ast.children.append(Tree(ast.data, []))
-                is_not_omit_node = True
-            elif type(ast.children[0]) == Token and ast.data in node_name_included_functor:
-                upgraded_ast.children.append(Tree(ast.children[0], []))
+        if type(ast) == Tree and ast.children:
+            # ノードがconnectivesの場合
+            if ast.data in NONASSOC_CONNECTIVE:
+                ast.children.append(Tree("formula", [ast.children.pop(0)]))
+                ast.children.append(Tree("formula", [ast.children.pop(0)]))
+                self.__upgrade_ast(ast.children[0])
+                self.__upgrade_ast(ast.children[1])
+                return ast
+            # 子にfunctorがある場合
+            elif type(ast.children[0]) == Token and ast.data in NODE_NAME_INCLUDED_FUNCTOR:
+                ast.data = ast.children[0]
                 ast.children.pop(0)
-                is_not_omit_node = True
             elif type(ast.children[0]) == Tree:
+                # !や?などの存在記号がある場合
                 if ast.children[0].data in QUANTIFIER:
                     self.__move_variable_to_child_of_quantifier(ast)
                 elif ast.children[0].data == "~":
-                    upgraded_ast.children.append(
-                        Tree("~", [Tree("formula", [])]))
+                    ast.data = "~"
                     ast.children.pop(0)
-                    is_tilde = True
+                    ast.children.append(Tree("formula", [ast.children.pop(0)]))
+            # 意味のないnodeを飛ばす
+            if 1 <= len(ast.children) <= 2:
+                for i, child in enumerate(ast.children):
+                    if self.__should_omit_node(child):
+                        for _ in child.children:
+                            ast.children.insert(i+1, child.children.pop())
+                        ast.children[i] = child.children.pop()
+            # 意味のないnodeを飛ばした後にもう一度存在記号がある場合の処理をして取りこぼしをなくす
+            if type(ast.children[0]) == Tree and ast.children[0].data in QUANTIFIER:
+                self.__move_variable_to_child_of_quantifier(ast)
             for child in ast.children:
-                if is_tilde:
-                    self.upgrade_ast(
-                        child, upgraded_ast.children[0].children[-1])
-                elif is_not_omit_node:
-                    self.upgrade_ast(child, upgraded_ast.children[-1])
-                else:
-                    self.upgrade_ast(child, upgraded_ast)
-        else:
-            upgraded_ast.children.append(ast)
+                self.__upgrade_ast(child)
 
-        return upgraded_ast
+        return ast
 
-    def __convert_formula2list(self, node, formula2list=None):
-        """__convert_formula2list
+    def convert_cst2ast(self, cst):
+        """convert_cst2ast
 
-        抽象構文木のformula部分をリストに変換してそれを返す関数
+        構文木から抽象構文木を作成して作成した抽象構文木を返す関数
+
+        Args:
+            cst (Tree): larkで作成した木
+
+        Returns:
+            ast (Tree): 最終的に作られた抽象構文木
+        """
+        omitted_tree = self.__omit_node_having_single_child(cst)
+        operator_to_parent_tree = self.__move_operator_to_parent(omitted_tree)
+        ast = self.__upgrade_ast(operator_to_parent_tree)
+
+        return ast
+
+    def __convert_ast2json_formula(self, node, json_formula=None):
+        """__convert_ast2json_formula
+
+        抽象構文木のformula部分をjsonに変換してそれを返す関数
 
         Args:
             node (Tree): 抽象構文木のnode
-            formula2list (list): 抽象構文木をlistで表現したもの
+            json_formula (list): 抽象構文木をjsonで表現したもの
+                                 再帰呼び出しの場合はjson_formulaを指定してformula部分をjsonに変換する
+                                 そうでない場合は省略する
 
         Returns:
-            formula2list (list): 抽象構文木をlistで表現したもの
+            json_formula (list): 抽象構文木をjsonで表現したもの
+            [
+                {
+                    "type":(str): symbolの種類(variable, quantifierなど)
+                    "symbol":(str): symbol本体(X2, !など)
+                    "children":(list): 子(もし子がないなら存在しない)
+                        [
+                            {
+                                "type":(str)
+                                "symbol":(str)
+                                "children":(list):
+                            },
+                            ...
+                        ]
+                },
+                ...
+            ]
         """
-        if formula2list is None:
-            formula2list = list()
+        is_top = False
+        is_not_symbol = False
+        if json_formula is None:
+            json_formula = list()
+            is_top = True
+        dict_formula = dict()
         if type(node) == Tree:
-            # 子がある場合は子を格納するための空のリストも追加する
-            if node.children and node.data != "tptp_root":
-                formula2list.append(node.data)
-                formula2list.append([])
-            # 子がない場合はnodeのみ追加する
-            elif node.data != "tptp_root":
-                formula2list.append(node.data)
-            for child in node.children:
-                if node.children and node.data != "tptp_root":
-                    self.__convert_formula2list(child, formula2list[-1])
-                else:
-                    self.__convert_formula2list(child, formula2list)
+            if node.data == "=" or node.data == "!=":
+                dict_formula["type"] = "equality"
+            elif node.data in QUANTIFIER:
+                dict_formula["type"] = "quantifier"
+            elif node.data in NONASSOC_CONNECTIVE:
+                dict_formula["type"] = "connectives"
+            elif node.data in NODE_NAME_TO_SYMBOL:
+                dict_formula["type"] = "operator"
+            elif node.data == "~":
+                dict_formula["type"] = "negation"
+            elif node.data == "formula":
+                dict_formula["type"] = "formula"
+            else:
+                is_not_symbol = True
+                dict_formula["type"] = "function"
+            dict_formula["symbol"] = node.data
+            dict_formula["children"] = list()
+
+            # 根がシンボルでないなら省略する（fof_quantifield_formula等のため）
+            if is_top and is_not_symbol:
+                for child in node.children:
+                    self.__convert_ast2json_formula(
+                        child, json_formula)
+            else:
+                json_formula.append(dict_formula)
+                for child in node.children:
+                    self.__convert_ast2json_formula(
+                        child, json_formula[-1]["children"])
+        # Tokenの場合
         else:
-            formula2list.append(node)
+            if node.isupper():
+                dict_formula["type"] = "variable"
+            elif node == "$false" or node == "$true":
+                dict_formula["type"] = "boolean-constant"
+            else:
+                dict_formula["type"] = "constant"
+            dict_formula["symbol"] = node
+            json_formula.append(dict_formula)
 
-        return formula2list
+        return json_formula
 
-    def __convert_annotation2dict(self, node):
-        """__convert_annotation2dict
+    def __convert_ast2json_annotation(self, node):
+        """__convert_ast2json_annotation
 
         抽象構文木のannotation部分をdictに変換してそれを返す関数
 
@@ -290,18 +372,13 @@ class ParseTstp():
         formula_info["formula_type"] = ast_child.data
         formula_info["name"] = ast_child.children[0]
         formula_info["formula_role"] = ast_child.children[1]
-        # formulaの抽象構文木の意味のないnodeを飛ばしたりfunctorなどを上にあげる等をすることで改良
-        upgraded_formula = self.upgrade_ast(ast_child.children[2])
-        # 改良されたformulaの抽象構文木をlistで表現してformula_infoに追加
-        formula_info["formula"] = self.__convert_formula2list(upgraded_formula)
+        formula_info["formula"] = self.__convert_ast2json_formula(
+            ast_child.children[2])
         formula_info["annotations"] = list()
         for annotation in ast_child.children[3].children:
             if annotation.data != "null":
-                # annotationの抽象構文木を意味のないnodeを飛ばしたりinferenceなどを上にあげる等をすることで改良
-                upgraded_annotation = self.upgrade_ast(ast_child.children[3])
-                # 改良されたannotationの抽象構文木をdictで表現してformula_infoに追加
                 formula_info["annotations"].append(
-                    self.__convert_annotation2dict(upgraded_annotation.children[0]))
+                    self.__convert_ast2json_annotation(annotation))
         return formula_info
 
     def convert_ast2json(self, ast):
@@ -352,7 +429,24 @@ class ParseTstp():
                         "formula_type":(str): formulaの種類(fof, thf, tffなど),
                         "name":(str): formulaの名前,
                         "formula_role":(str): formulaの役割(axiomやplainなど),
-                        "formula":(list): formula本体,
+                        "formula":(list): formula本体
+                            [
+                                {
+                                    "type":(str): symbolの種類(variable, quantifierなど)
+                                    "symbol":(str): symbol本体(X2, !など)
+                                    "children":(list): 子(もし子がないなら存在しない)
+                                        [
+                                            {
+                                                "type":(str)
+                                                "symbol":(str)
+                                                "children":(list):
+                                            },
+                                            ...
+                                        ]
+                                },
+                                ...
+                            ]
+                        ,
                         "annotations":(list): 参考にしたformulaの名前などの補足情報
                             [
                                 {
