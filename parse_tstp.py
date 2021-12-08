@@ -347,8 +347,8 @@ class ParseTstp():
                 annotation2dict["useful_info"].append(str(child))
         return annotation2dict
 
-    def __convert_child_of_ast2formula_info(self, ast_child):
-        """__convert_child_of_ast2formula_info
+    def __convert_ast2json_formula_info(self, ast_child):
+        """__convert_ast2json_formula_info
 
         抽象構文木の子をformula情報に変換してformula情報を返す関数
 
@@ -395,7 +395,7 @@ class ParseTstp():
         ast2json = list()
         for child in ast.children:
             if type(child) == Tree:
-                formula_info = self.__convert_child_of_ast2formula_info(child)
+                formula_info = self.__convert_ast2json_formula_info(child)
                 ast2json.append(formula_info)
         return ast2json
 
