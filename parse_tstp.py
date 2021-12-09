@@ -77,7 +77,7 @@ class ParseTstp():
         構文木から子が一つしかないノードを飛ばした木を作成してそれを返す関数
 
         Args:
-            cst (Tree): larkで作成した木(tree関数の返り値)
+            cst (Tree): larkで作成した構文木
             tree (Tree): 構文木から子が一つしかないノードを飛ばした木、最初はTree("tptp_root", [])
                          再帰呼び出しの場合はtreeを指定してtreeを変更して抽象構文木を作っていく
                          そうでない場合は省略する
@@ -114,16 +114,17 @@ class ParseTstp():
             omitted_tree (Tree): 子が一つしかないノードを飛ばした木
 
         Returns:
-            omitted_tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
+            operator_to_parent_tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
         """
-        if type(omitted_tree) == Tree:
-            if len(omitted_tree.children) == 3 and type(omitted_tree.children[1]) == Tree and omitted_tree.children[1].data in SYMBOL_TO_NODE_NAME:
-                omitted_tree.data = omitted_tree.children[1].data
-                omitted_tree.children.pop(1)
-            for child in omitted_tree.children:
+        operator_to_parent_tree = omitted_tree
+        if type(operator_to_parent_tree) == Tree:
+            if len(operator_to_parent_tree.children) == 3 and type(operator_to_parent_tree.children[1]) == Tree and operator_to_parent_tree.children[1].data in SYMBOL_TO_NODE_NAME:
+                operator_to_parent_tree.data = operator_to_parent_tree.children[1].data
+                operator_to_parent_tree.children.pop(1)
+            for child in operator_to_parent_tree.children:
                 self.__move_operator_to_parent(child)
 
-        return omitted_tree
+        return operator_to_parent_tree
 
     def __move_variable_to_child_of_quantifier(self, node):
         """__move_variable_to_child_of_quantifier
@@ -171,25 +172,26 @@ class ParseTstp():
             node.data in QUANTIFIER or node.data in NODE_NAME_INCLUDED_FUNCTOR or node.data in NONASSOC_CONNECTIVE or node.data in SYMBOL_TO_NODE_NAME)
         return 2 <= len(node.children) <= 3 and should_omit_node_name
 
-    def __upgrade_ast(self, ast):
-        """__upgrade_ast
+    def __convert_operator_to_parent_tree2ast(self, operator_to_parent_tree):
+        """__convert_operator_to_parent_tree2ast
 
         子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木を
         意味のないnodeを省略したりfunctor等を上に上げる等で抽象構文木を改良してその抽象構文木を返す関数
 
         Args:
-            ast (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
+            operator_to_parent_tree (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
 
         Returns:
             ast (Tree): 改良された抽象構文木
         """
+        ast = operator_to_parent_tree
         if type(ast) == Tree and ast.children:
             # ノードがconnectivesの場合
             if ast.data in NONASSOC_CONNECTIVE:
                 ast.children.append(Tree("formula", [ast.children.pop(0)]))
                 ast.children.append(Tree("formula", [ast.children.pop(0)]))
-                self.__upgrade_ast(ast.children[0])
-                self.__upgrade_ast(ast.children[1])
+                self.__convert_operator_to_parent_tree2ast(ast.children[0])
+                self.__convert_operator_to_parent_tree2ast(ast.children[1])
                 return ast
             # 子にfunctorがある場合
             elif type(ast.children[0]) == Token and ast.data in NODE_NAME_INCLUDED_FUNCTOR:
@@ -214,7 +216,7 @@ class ParseTstp():
             if type(ast.children[0]) == Tree and ast.children[0].data in QUANTIFIER:
                 self.__move_variable_to_child_of_quantifier(ast)
             for child in ast.children:
-                self.__upgrade_ast(child)
+                self.__convert_operator_to_parent_tree2ast(child)
 
         return ast
 
@@ -231,7 +233,8 @@ class ParseTstp():
         """
         omitted_tree = self.__omit_node_having_single_child(cst)
         operator_to_parent_tree = self.__move_operator_to_parent(omitted_tree)
-        ast = self.__upgrade_ast(operator_to_parent_tree)
+        ast = self.__convert_operator_to_parent_tree2ast(
+            operator_to_parent_tree)
 
         return ast
 
