@@ -198,7 +198,7 @@ class ParseTstp():
                 ast.data = ast.children[0]
                 ast.children.pop(0)
             elif type(ast.children[0]) == Tree:
-                # !や?などの存在記号がある場合
+                # !や?などのquantifierがある場合
                 if ast.children[0].data in QUANTIFIER:
                     self.__move_variable_to_child_of_quantifier(ast)
                 elif ast.children[0].data == "~":
@@ -212,7 +212,7 @@ class ParseTstp():
                         for _ in child.children:
                             ast.children.insert(i+1, child.children.pop())
                         ast.children[i] = child.children.pop()
-            # 意味のないnodeを飛ばした後にもう一度存在記号がある場合の処理をして取りこぼしをなくす
+            # 意味のないnodeを飛ばした後にもう一度quantifierがある場合の処理をして取りこぼしをなくす
             if type(ast.children[0]) == Tree and ast.children[0].data in QUANTIFIER:
                 self.__move_variable_to_child_of_quantifier(ast)
             for child in ast.children:
