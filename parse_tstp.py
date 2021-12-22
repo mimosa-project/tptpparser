@@ -71,60 +71,62 @@ class ParseTstp():
             G.edge(str(i), str(j))
         G.render(png_path)
 
-    def __omit_node_having_single_child(self, cst, tree=None):
+    def __omit_node_having_single_child(self, cst, omitted=None):
         """
 
         構文木から子が一つしかないノードを飛ばした木を作成してそれを返す関数
 
         Args:
             cst (Tree): larkで作成した構文木
-            tree (Tree): 構文木から子が一つしかないノードを飛ばした木、最初はTree("tptp_root", [])
+            omitted (Tree): 構文木から子が一つだけのノードを飛ばした木、最初はTree("tptp_root", [])
                          再帰呼び出しの場合はtreeを指定してtreeを変更して抽象構文木を作っていく
                          そうでない場合は省略する
 
         Returns:
-            omitted_tree (Tree): 構文木から子が一つしかないノードを飛ばした木
+            omitted (Tree): 構文木から子が一つしかないノードを飛ばした木
         """
-        omitted_tree = tree
-        if omitted_tree is None:
-            omitted_tree = Tree("tptp_root", [])
+
+        if omitted is None:
+            assert cst.data == "tptp_root"
+            omitted = Tree("tptp_root", [])
+
         if type(cst) == Tree:
-            if not (len(cst.children) == 1 or cst.data == "tptp_root"):
+            if len(cst.children) == 1 or cst.data == "tptp_root":
+                # 子が一つだけのノードは飛ばす
+                omitted_child = omitted
+            else:
                 if cst.data in NODE_NAME_TO_SYMBOL:
                     cst.data = NODE_NAME_TO_SYMBOL[cst.data]
-                omitted_tree.children.append(Tree(cst.data, []))
+                omitted_child = Tree(cst.data, [])
+                omitted.children.append(omitted_child)
+
             for child in cst.children:
-                if len(cst.children) == 1 or cst.data == "tptp_root":
-                    self.__omit_node_having_single_child(child, omitted_tree)
-                else:
-                    self.__omit_node_having_single_child(
-                        child, omitted_tree.children[-1])
-        # Tokenの場合
+                self.__omit_node_having_single_child(child, omitted_child)
         else:
-            omitted_tree.children.append(cst)
+            # Tokenの場合
+            omitted.children.append(cst)
 
-        return omitted_tree
+        return omitted
 
-    def __move_operator_to_parent(self, omitted_tree):
+    def __move_operator_to_parent(self, tree):
         """__move_operator_to_parent
 
         子が一つしかないノードを飛ばした木から二項演算子を上に上げることで抽象構文木を改良する関数
 
         Args:
-            omitted_tree (Tree): 子が一つしかないノードを飛ばした木
+            tree (Tree): 子が一つしかないノードを飛ばした木
 
         Returns:
-            operator_to_parent_tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
+            tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
         """
-        operator_to_parent_tree = omitted_tree
-        if type(operator_to_parent_tree) == Tree:
-            if len(operator_to_parent_tree.children) == 3 and type(operator_to_parent_tree.children[1]) == Tree and operator_to_parent_tree.children[1].data in SYMBOL_TO_NODE_NAME:
-                operator_to_parent_tree.data = operator_to_parent_tree.children[1].data
-                operator_to_parent_tree.children.pop(1)
-            for child in operator_to_parent_tree.children:
+        if type(tree) == Tree:
+            if len(tree.children) == 3 and type(tree.children[1]) == Tree and tree.children[1].data in SYMBOL_TO_NODE_NAME:
+                tree.data = tree.children[1].data
+                tree.children.pop(1)
+            for child in tree.children:
                 self.__move_operator_to_parent(child)
 
-        return operator_to_parent_tree
+        return tree
 
     def __move_variable_to_child_of_quantifier(self, node):
         """__move_variable_to_child_of_quantifier
@@ -172,53 +174,53 @@ class ParseTstp():
             node.data in QUANTIFIER or node.data in NODE_NAME_INCLUDED_FUNCTOR or node.data in NONASSOC_CONNECTIVE or node.data in SYMBOL_TO_NODE_NAME)
         return 2 <= len(node.children) <= 3 and should_omit_node_name
 
-    def __convert_operator_to_parent_tree2ast(self, operator_to_parent_tree):
+    def __convert_operator_to_parent_tree2ast(self, tree):
         """__convert_operator_to_parent_tree2ast
 
         子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木を
         意味のないnodeを省略したりfunctor等を上に上げる等で抽象構文木を改良してその抽象構文木を返す関数
 
         Args:
-            operator_to_parent_tree (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
+            tree (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
 
         Returns:
-            ast (Tree): 改良された抽象構文木
+            tree (Tree): 改良された抽象構文木
         """
-        ast = operator_to_parent_tree
-        if type(ast) == Tree and ast.children:
+        if type(tree) == Tree and tree.children:
             # ノードがconnectivesの場合
-            if ast.data in NONASSOC_CONNECTIVE:
-                ast.children.append(Tree("formula", [ast.children.pop(0)]))
-                ast.children.append(Tree("formula", [ast.children.pop(0)]))
-                self.__convert_operator_to_parent_tree2ast(ast.children[0])
-                self.__convert_operator_to_parent_tree2ast(ast.children[1])
-                return ast
+            if tree.data in NONASSOC_CONNECTIVE:
+                tree.children.append(Tree("formula", [tree.children.pop(0)]))
+                tree.children.append(Tree("formula", [tree.children.pop(0)]))
+                self.__convert_operator_to_parent_tree2ast(tree.children[0])
+                self.__convert_operator_to_parent_tree2ast(tree.children[1])
+                return tree
             # 子にfunctorがある場合
-            elif type(ast.children[0]) == Token and ast.data in NODE_NAME_INCLUDED_FUNCTOR:
-                ast.data = ast.children[0]
-                ast.children.pop(0)
-            elif type(ast.children[0]) == Tree:
+            elif type(tree.children[0]) == Token and tree.data in NODE_NAME_INCLUDED_FUNCTOR:
+                tree.data = tree.children[0]
+                tree.children.pop(0)
+            elif type(tree.children[0]) == Tree:
                 # !や?などのquantifierがある場合
-                if ast.children[0].data in QUANTIFIER:
-                    self.__move_variable_to_child_of_quantifier(ast)
-                elif ast.children[0].data == "~":
-                    ast.data = "~"
-                    ast.children.pop(0)
-                    ast.children.append(Tree("formula", [ast.children.pop(0)]))
+                if tree.children[0].data in QUANTIFIER:
+                    self.__move_variable_to_child_of_quantifier(tree)
+                elif tree.children[0].data == "~":
+                    tree.data = "~"
+                    tree.children.pop(0)
+                    tree.children.append(
+                        Tree("formula", [tree.children.pop(0)]))
             # 意味のないnodeを飛ばす
-            if 1 <= len(ast.children) <= 2:
-                for i, child in enumerate(ast.children):
+            if 1 <= len(tree.children) <= 2:
+                for i, child in enumerate(tree.children):
                     if self.__should_omit_node(child):
                         for _ in child.children:
-                            ast.children.insert(i+1, child.children.pop())
-                        ast.children[i] = child.children.pop()
+                            tree.children.insert(i+1, child.children.pop())
+                        tree.children[i] = child.children.pop()
             # 意味のないnodeを飛ばした後にもう一度quantifierがある場合の処理をして取りこぼしをなくす
-            if type(ast.children[0]) == Tree and ast.children[0].data in QUANTIFIER:
-                self.__move_variable_to_child_of_quantifier(ast)
-            for child in ast.children:
+            if type(tree.children[0]) == Tree and tree.children[0].data in QUANTIFIER:
+                self.__move_variable_to_child_of_quantifier(tree)
+            for child in tree.children:
                 self.__convert_operator_to_parent_tree2ast(child)
 
-        return ast
+        return tree
 
     def convert_cst2ast(self, cst):
         """convert_cst2ast
