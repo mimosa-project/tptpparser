@@ -80,7 +80,6 @@ fof_plain_atomic_formula : fof_plain_term
 fof_defined_atomic_formula : fof_defined_plain_formula | fof_defined_infix_formula
 fof_defined_plain_formula : fof_defined_plain_term
 
-fof_defined_infix_formula : fof_term defined_infix_pred fof_term
 
 fof_system_atomic_formula : fof_system_term
 fof_defined_term     : DEFINED_TERM | fof_defined_atomic_term
@@ -229,6 +228,11 @@ tff_unitary_type     : tff_atomic_type | "(" tff_xprod_type ")"
 !に書き換え、tff_variable_listは残す
 ``` lark
 tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formula
+```
+
+defined_infix_predに書き換える
+``` lark
+fof_defined_infix_formula : fof_term defined_infix_pred fof_term
 ```
 
 UNARY_CONNECTIVE fof_unit_formulaならUNARY_CONNECTIVEに書き換える、それ以外は飛ばす
