@@ -1,18 +1,81 @@
 import json
 from graphviz import Digraph
-from lark import Lark, Tree, Token
+from lark import Lark, Tree
 
-NODE_NAME_TO_SYMBOL = {"|": "|", "infix_inequality": "!=", "infix_equality": "=", "assignment": ":=", ">": ">", "*": "*", "+": "+", "subtype_sign": "<<", "gentzen_arrow": "-->", "double_left_right_arrow": "<=>",  "double_arrow": "=>",
-                       "double_less_sign": "<=", "left_right_arrow": "<~>", "not_or": "~|", "not_and": "~&", "unary_connective": "~", "fof_quantifier_exclamation": "!", "fof_quantifier_question": "?", "fof_quantifier_tilde_exclamation": "~!", "assoc_connective_and": "&"}
+OPERATOR = ("|", ":=", ">", "*", "+", "<<", "-->", "&")
 
-SYMBOL_TO_NODE_NAME = {v: k for k, v in NODE_NAME_TO_SYMBOL.items()}
-
-QUANTIFIER = ("!", "?", "^", "@+", "@-", "!>", "?*")
+QUANTIFIER = ("!", "?", "~!", "^", "@+", "@-", "!>", "?*")
 
 NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
 
-NODE_NAME_INCLUDED_FUNCTOR = ("fof_defined_plain_term", "fof_plain_term", "fof_system_term",
-                              "general_function", "tff_plain_atomic", "tff_defined_plain", "tff_atomic_type", "thf_fof_function")
+# ()や[]があるとき残すノード名
+# key: 子に括弧を含んでいるノード名
+# value: keyのノード名の子で括弧が使用されているノード名
+# 例
+# thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
+# key: thf_unitary_formula
+# value: thf_logic_formula
+NODE_NAME_TO_PARENTHESIS_CONTENT = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
+                                    "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
+                                    "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
+                                    "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
+                                    "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
+                                    "fof_unitary_formula": "fof_logic_formula"}
+
+# 再帰されているノード名
+# 例
+# thf_variable_list    : thf_typed_variable | thf_typed_variable "," thf_variable_list
+NODE_NAME_USED_RECURSION = ("thf_variable_list", "thf_atom_typing_list", "thf_let_defn_list", "thf_formula_list", "tff_variable_list", "tff_atom_typing_list", "tfx_let_defn_list",
+                            "tff_arguments", "tff_type_arguments", "tff_type_list", "fof_variable_list", "fof_arguments", "fof_formula_tuple_list", "name_list", "general_terms")
+
+# ノード名orトークン名 トークン名 ノード名orトークン名となっているノード名
+# 例
+# thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
+NODE_NAME_USED_OPERATOR = ("thf_binary_nonassoc", "thf_or_formula", "thf_and_formula", "thf_infix_unary", "thf_defined_infix", "thf_let_defn", "thf_mapping_type", "thf_xprod_type",
+                           "thf_union_type", "thf_subtype", "thf_sequent", "tff_binary_nonassoc", "tff_or_formula", "tff_and_formula", "tff_infix_unary", "tff_defined_infix",
+                           "tfx_let_defn", "tff_mapping_type", "tff_xprod_type", "tff_subtype", "tfx_sequent", "fof_binary_nonassoc", "fof_or_formula", "fof_and_formula",
+                           "fof_infix_unary", "fof_defined_infix_formula", "fof_sequent", "disjunction")
+
+# ノード名orトークン名 文字列 ノード名orトークン名 もしくは 文字列(ノード名)となっているノード名
+# key: 子に記号を含んでいるノード名
+# value: 記号
+# 例
+# thf_apply_formula    : thf_unit_formula "@" thf_unit_formula | thf_apply_formula "@" thf_unit_formula
+# key: thf_apply_formula
+# value: @
+NODE_NAME_TO_USED_SYMBOL = {"thf_apply_formula": "@", "thf_typed_variable": "：", "thf_atom_typing": "：",
+                            "tff_typed_variable": "：", "tff_atom_typing": "：", "general_term": "：",
+                            "tpi_annotated": "tpi", "thf_annotated": "thf", "tff_annotated": "tff", "tcf_annotated": "tcf", "fof_annotated": "fof",
+                            "cnf_annotated": "cnf", "thf_conditional": "$ite", "thf_let": "$let", "tfx_conditional": "$ite", "tfx_let": "$let", "include": "include"}
+
+# トークン名(ノード名) もしくは トークン名 ノード名となっているノード名
+# 例
+# thf_quantification   : THF_QUANTIFIER "[" thf_variable_list "]" ":"
+NODE_NAME_USED_FUNCTOR = ("thf_quantification", "thf_prefix_unary", "thf_fof_function", "tff_prefix_unary", "tff_plain_atomic", "tff_defined_plain", "tff_system_atomic",
+                          "tff_atomic_type", "fof_unary_formula", "fof_plain_term", "fof_defined_plain_term", "fof_system_term", "general_function", "literal")
+
+# formula_dataの子のノード名
+# formula_dataを書き換える文字列は場合によって文字列(ノード名)の文字列が違うため子のノード名をkey、書き換える文字をvalueとしている
+# formula_data         : "$thf(" thf_formula ")" | "$tff(" tff_formula ")" | "$fof(" fof_formula ")" | "$cnf(" cnf_formula ")" | "$fot(" fof_term ")"
+FORMULA_DATA_TO_SYMBOL = {"thf_formula": "$thf", "tff_formula": "$tff",
+                          "fof_formula": "$fof", "cnf_formula": "$cnf", "fof_term": "$fot"}
+
+# 飛ばさないノード名
+NODE_NAME_NOT_OMIT = ("annotations", "thf_quantified_formula", "optional_info", "thf_tuple", "tfx_tuple",
+                      "tfx_tuple_type", "fof_formula_tuple", "formula_selection", "general_list")
+
+# トークン名 [ノード名] : ノード名となっているノード名
+# [ノード名]のノード名には再帰されているノード名が入る
+# 例
+# tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
+TFF_AND_FOF_QUANTIFED = ("tff_quantified_formula", "fof_quantified_formula")
+
+# 文字列 [ノード名] : ノード名となっているノード名
+# [ノード名]のノード名には再帰されているノード名が入る
+# 例
+# tf1_quantified_type  : "!>" "[" tff_variable_list "]" ":" tff_monotype
+TF1_AND_TCF_QUANTIFED_TO_SYMBOL = {"tf1_quantified_type": "!>",
+                                   "tcf_quantified_formula": "!"}
 
 
 class ParseTstp():
@@ -27,6 +90,33 @@ class ParseTstp():
     def __init__(self, lark_path):
         self.lark_path = lark_path
 
+    def create_edges_tree_graph(self, node, edges, digraph_instance, tag_num):
+        """create_edges_tree_graph
+
+        larkで作成した木のグラフを作る際のエッジを作成する関数
+
+        Args:
+            node (Tree or Token): 木のノード
+            edges (list): グラフのエッジ
+            digraph_instance (graphviz.graphs.Digraph): digraphのインスタンス
+            tag_num (list): グラフのノードを作る際のタグに使用するための番号
+                            再帰した際でも値が変更されるような参照渡しができるlist型にしている
+                            そのため、要素は一つしかない
+        """
+        if type(node) == Tree:
+            parent_tag = tag_num[0]
+            for child in node.children:
+                if type(child) == Tree:
+                    digraph_instance.node(str(tag_num[0]+1), child.data)
+                # トークンの場合
+                else:
+                    digraph_instance.node(
+                        str(tag_num[0]+1), child.value + "," + child.type)
+                edges.append([str(parent_tag), str(tag_num[0]+1)])
+                tag_num[0] += 1
+                self.create_edges_tree_graph(
+                    child, edges, digraph_instance, tag_num)
+
     def create_tree_graph(self, tree_root, png_path):
         """create_graph
 
@@ -36,208 +126,78 @@ class ParseTstp():
             tree_root (Tree): larkで作成した木
             png_path (str): 保存するpngファイルパス
         """
-        input_list = tree_root.pretty().split("\n")
         edges = list()
-        tree2list = list()
-        serial_number = 0
-        for s in input_list:
-            serial_number += 1
-            space_count = s.count(" ")
-            word = s.split()
-            if not word:
-                continue
-            elif len(word) > 1:
-                # Tokenの場合
-                tree2list.append([space_count, f"{word[0]},{serial_number}"])
-                serial_number += 1
-                tree2list.append([space_count+2, f"{word[1]},{serial_number}"])
-            else:
-                # Treeの場合
-                tree2list.append([space_count, f"{word[0]},{serial_number}"])
-        # edgeの作成
-        for i in range(len(tree2list)):
-            if i != 0:
-                # スペースの数の違いから子か兄弟か等を判定
-                if tree2list[i-1][0] < tree2list[i][0]:
-                    edges.append((tree2list[i-1][1], tree2list[i][1]))
-                else:
-                    for j in range(i, -1, -1):
-                        if tree2list[j][0]+2 == tree2list[i][0]:
-                            edges.append((tree2list[j][1], tree2list[i][1]))
-                            break
-        # グラフ作成
         G = Digraph(format="png")
+        tag_num = [1]
+        G.node(str(tag_num[0]), tree_root.data)
+        self.create_edges_tree_graph(tree_root, edges, G, tag_num)
         for i, j in edges:
             G.edge(str(i), str(j))
         G.render(png_path)
 
-    def __omit_node_having_single_child(self, cst, omitted=None):
-        """
-
-        構文木から子が一つしかないノードを飛ばした木を作成してそれを返す関数
-
-        Args:
-            cst (Tree): larkで作成した構文木
-            omitted (Tree): 構文木から子が一つだけのノードを飛ばした木、最初はTree("tptp_root", [])
-                         再帰呼び出しの場合はtreeを指定してtreeを変更して抽象構文木を作っていく
-                         そうでない場合は省略する
-
-        Returns:
-            omitted (Tree): 構文木から子が一つしかないノードを飛ばした木
-        """
-
-        if omitted is None:
-            assert cst.data == "tptp_root"
-            omitted = Tree("tptp_root", [])
-
-        if type(cst) == Tree:
-            if len(cst.children) == 1 or cst.data == "tptp_root":
-                # 子が一つだけのノードは飛ばす
-                omitted_child = omitted
-            else:
-                if cst.data in NODE_NAME_TO_SYMBOL:
-                    cst.data = NODE_NAME_TO_SYMBOL[cst.data]
-                omitted_child = Tree(cst.data, [])
-                omitted.children.append(omitted_child)
-
-            for child in cst.children:
-                self.__omit_node_having_single_child(child, omitted_child)
-        else:
-            # Tokenの場合
-            omitted.children.append(cst)
-
-        return omitted
-
-    def __move_operator_to_parent(self, tree):
-        """__move_operator_to_parent
-
-        子が一つしかないノードを飛ばした木から二項演算子を上に上げることで抽象構文木を改良する関数
-
-        Args:
-            tree (Tree): 子が一つしかないノードを飛ばした木
-
-        Returns:
-            tree (Tree): 子が一つしかないノードを飛ばした木にある二項演算子を上に上げた木
-        """
-        if type(tree) == Tree:
-            if len(tree.children) == 3 and type(tree.children[1]) == Tree and tree.children[1].data in SYMBOL_TO_NODE_NAME:
-                tree.data = tree.children[1].data
-                tree.children.pop(1)
-            for child in tree.children:
-                self.__move_operator_to_parent(child)
-
-        return tree
-
-    def __move_variable_to_child_of_quantifier(self, node):
-        """__move_variable_to_child_of_quantifier
-
-        nodeの子の値が変数の定義に使用される記号(!, ?など)の時にそのnodeの兄弟のnodeの値が変数の場合は
-        その直前の変数の定義に使用される記号のnodeの子になるように変更する関数
-
-        Args:
-            node (Tree): 変数の定義に使用される記号を子に持つnode
-        """
-        quantifier_index = 0
-        while True:
-            # variableまたはquantifier、formulaの場合
-            if type(node.children[quantifier_index+1]) == Tree:
-                # variableなら追加
-                if "variable" in node.children[quantifier_index+1].data:
-                    node.children[quantifier_index].children.append(
-                        node.children[quantifier_index+1])
-                    node.children.pop(quantifier_index+1)
-                # quantifierならこのquantifier以降の変数をこのquantifierの子に追加する
-                elif node.children[quantifier_index+1].data in QUANTIFIER:
-                    quantifier_index += 1
-                # formulaの場合は終了する
-                else:
-                    break
-            # 変数名の場合
-            else:
-                node.children[quantifier_index].children.append(
-                    node.children[quantifier_index+1])
-                node.children.pop(quantifier_index+1)
-
-    def __should_omit_node(self, node):
-        """__should_omit_node
-
-        省略するノードかどうかを判定する関数
-
-        Args:
-            node (Tree): 判定したいノード
-        Returns:
-            2 <= len(node.children) <= 3 and should_omit_node_name (bool): 省略するときはTrueそうでないならFalse
-        """
-        if (type(node) != Tree):
-            return False
-        should_omit_node_name = not(
-            node.data in QUANTIFIER or node.data in NODE_NAME_INCLUDED_FUNCTOR or node.data in NONASSOC_CONNECTIVE or node.data in SYMBOL_TO_NODE_NAME)
-        return 2 <= len(node.children) <= 3 and should_omit_node_name
-
-    def __convert_operator_to_parent_tree2ast(self, tree):
-        """__convert_operator_to_parent_tree2ast
-
-        子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木を
-        意味のないnodeを省略したりfunctor等を上に上げる等で抽象構文木を改良してその抽象構文木を返す関数
-
-        Args:
-            tree (Tree): 子が一つしかないnodeを省略し、二項演算子を上にあげた抽象構文木のnode
-
-        Returns:
-            tree (Tree): 改良された抽象構文木
-        """
-        if type(tree) == Tree and tree.children:
-            # ノードがconnectivesの場合
-            if tree.data in NONASSOC_CONNECTIVE:
-                tree.children.append(Tree("formula", [tree.children.pop(0)]))
-                tree.children.append(Tree("formula", [tree.children.pop(0)]))
-                self.__convert_operator_to_parent_tree2ast(tree.children[0])
-                self.__convert_operator_to_parent_tree2ast(tree.children[1])
-                return tree
-            # 子にfunctorがある場合
-            elif type(tree.children[0]) == Token and tree.data in NODE_NAME_INCLUDED_FUNCTOR:
-                tree.data = tree.children[0]
-                tree.children.pop(0)
-            elif type(tree.children[0]) == Tree:
-                # !や?などのquantifierがある場合
-                if tree.children[0].data in QUANTIFIER:
-                    self.__move_variable_to_child_of_quantifier(tree)
-                elif tree.children[0].data == "~":
-                    tree.data = "~"
-                    tree.children.pop(0)
-                    tree.children.append(
-                        Tree("formula", [tree.children.pop(0)]))
-            # 意味のないnodeを飛ばす
-            if 1 <= len(tree.children) <= 2:
-                for i, child in enumerate(tree.children):
-                    if self.__should_omit_node(child):
-                        for _ in child.children:
-                            tree.children.insert(i+1, child.children.pop())
-                        tree.children[i] = child.children.pop()
-            # 意味のないnodeを飛ばした後にもう一度quantifierがある場合の処理をして取りこぼしをなくす
-            if type(tree.children[0]) == Tree and tree.children[0].data in QUANTIFIER:
-                self.__move_variable_to_child_of_quantifier(tree)
-            for child in tree.children:
-                self.__convert_operator_to_parent_tree2ast(child)
-
-        return tree
-
-    def convert_cst2ast(self, cst):
+    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), is_leave_variable_list_node=False):
         """convert_cst2ast
 
-        構文木から抽象構文木を作成して作成した抽象構文木を返す関数
+        具象構文木から抽象構文木を作成する関数
 
         Args:
-            cst (Tree): larkで作成した木
+            cst(Tree or Token): 具象構文木のノード
+            ast(Tree or Token): 抽象構文木のノード
+            is_leave_variable_list_node(bool): 再帰が使用されているノードを例外的に飛ばさない場合かどうか
 
         Returns:
-            ast (Tree): 最終的に作られた抽象構文木
+            ast(Tree): 最終的に作成される抽象構文木
         """
-        omitted_tree = self.__omit_node_having_single_child(cst)
-        operator_to_parent_tree = self.__move_operator_to_parent(omitted_tree)
-        ast = self.__convert_operator_to_parent_tree2ast(
-            operator_to_parent_tree)
-
+        is_leave_node = True
+        if type(cst) == Tree:
+            # 飛ばさない場合は抽象構文木に加える
+            if cst.data in NODE_NAME_NOT_OMIT or is_leave_variable_list_node or cst.data in NODE_NAME_TO_PARENTHESIS_CONTENT and type(cst.children[0]) == Tree and NODE_NAME_TO_PARENTHESIS_CONTENT[cst.data] == cst.children[0].data:
+                ast.children.append(Tree(cst.data, []))
+                is_leave_variable_list_node = False
+            # ノード名 トークン ノード名となっている場合はトークンに書き換える
+            elif cst.data in NODE_NAME_USED_OPERATOR and len(cst.children) == 3:
+                operator = cst.children.pop(1)
+                ast.children.append(
+                    Tree(operator.value + "," + operator.type, []))
+            # ノード名 記号 ノード名 or 記号(ノード名)となっている場合は記号に書き換える
+            elif cst.data in NODE_NAME_TO_USED_SYMBOL and len(cst.children) >= 2:
+                ast.children.append(
+                    Tree(NODE_NAME_TO_USED_SYMBOL[cst.data] + "," + cst.data, []))
+            # トークン名(ノード名...)となっている場合はトークンに書き換える
+            elif cst.data in NODE_NAME_USED_FUNCTOR and len(cst.children) >= 2:
+                functor = cst.children.pop(0)
+                ast.children.append(
+                    Tree(functor.value + "," + functor.type, []))
+            # ノード名がformula_dataの場合はそれぞれの文字列に書き換える
+            elif cst.data == "formula_data":
+                ast.children.append(
+                    Tree(FORMULA_DATA_TO_SYMBOL[cst.children[0].data], []))
+            # トークン名 [ノード名] : ノード名となっている場合はトークンに書き換えて、[ノード名]のノード名は飛ばさないようにする(どこまでが[ノード名]のノード名なのか判別できるようにするため)
+            elif cst.data in TFF_AND_FOF_QUANTIFED:
+                symbol = cst.children.pop(0)
+                ast.children.append(Tree(symbol.value + "," + symbol.type, []))
+                is_leave_variable_list_node = True
+            # 文字列 [ノード名] : ノード名となっている場合は文字列に書き換えて、[ノード名]のノード名は飛ばさないようにする(どこまでが[ノード名]のノード名なのか判別できるようにするため)
+            elif cst.data in TF1_AND_TCF_QUANTIFED_TO_SYMBOL:
+                ast.children.append(
+                    Tree(TF1_AND_TCF_QUANTIFED_TO_SYMBOL[cst.data], []))
+                is_leave_variable_list_node = True
+            else:
+                is_leave_node = False
+            for i, child in enumerate(cst.children):
+                if i != 0:
+                    is_leave_variable_list_node = False
+                if type(child) == Tree and child.data == "null":
+                    continue
+                if is_leave_node:
+                    self.convert_cst2ast(
+                        child, ast.children[-1], is_leave_variable_list_node)
+                else:
+                    self.convert_cst2ast(
+                        child, ast, is_leave_variable_list_node)
+        # トークンの場合
+        else:
+            ast.children.append(cst)
         return ast
 
     def __convert_ast2json_formula(self, node, json_formula=None):
@@ -270,41 +230,34 @@ class ParseTstp():
                 ...
             ]
         """
-        is_top = False
-        is_not_symbol = False
         if json_formula is None:
             json_formula = list()
-            is_top = True
         dict_formula = dict()
         if type(node) == Tree:
-            if node.data == "=" or node.data == "!=":
-                dict_formula["type"] = "equality"
-            elif node.data in QUANTIFIER:
-                dict_formula["type"] = "quantifier"
-            elif node.data in NONASSOC_CONNECTIVE:
-                dict_formula["type"] = "connectives"
-            elif node.data in NODE_NAME_TO_SYMBOL:
-                dict_formula["type"] = "operator"
-            elif node.data == "~":
-                dict_formula["type"] = "negation"
-            elif node.data == "formula":
-                dict_formula["type"] = "formula"
+            if "," in node.data:
+                node_name, node_type = node.data.split(",")
+                if node_name == "=" or node_name == "!=":
+                    dict_formula["type"] = "equality"
+                elif node_name in QUANTIFIER:
+                    dict_formula["type"] = "quantifier"
+                elif node_name in NONASSOC_CONNECTIVE:
+                    dict_formula["type"] = "connectives"
+                elif node_name in OPERATOR:
+                    dict_formula["type"] = "operator"
+                elif node_name == "~":
+                    dict_formula["type"] = "negation"
+                elif "FUNCTOR" in node_type:
+                    dict_formula["type"] = "function"
+                elif node_type == "ATOMIC_WORD":
+                    dict_formula["type"] = "atomic_word"
             else:
-                is_not_symbol = True
-                dict_formula["type"] = "function"
+                dict_formula["type"] = "node_name"
             dict_formula["symbol"] = node.data
             dict_formula["children"] = list()
-
-            # 根がシンボルでないなら省略する（fof_quantifield_formula等のため）
-            if is_top and is_not_symbol:
-                for child in node.children:
-                    self.__convert_ast2json_formula(
-                        child, json_formula)
-            else:
-                json_formula.append(dict_formula)
-                for child in node.children:
-                    self.__convert_ast2json_formula(
-                        child, json_formula[-1]["children"])
+            json_formula.append(dict_formula)
+            for child in node.children:
+                self.__convert_ast2json_formula(
+                    child, json_formula[-1]["children"])
         # Tokenの場合
         else:
             if node.isupper():
@@ -335,21 +288,25 @@ class ParseTstp():
                 annotation2dict["useful_info"] (list): 上記以外の情報を文字列のリストにして保存している
         """
         annotation2dict = dict()
-        annotation2dict["source"] = node.data
+        annotation2dict["source"] = node.children[0].data
         annotation2dict["useful_info"] = list()
-        if annotation2dict["source"] == "inference":
+        if "inference" in annotation2dict["source"]:
             annotation2dict["inference_parents"] = list()
-        for i, child in enumerate(node.children):
-            if i == 0 and annotation2dict["source"] == "inference":
+        for i, child in enumerate(node.children[0].children):
+            if i == 0 and "inference" in annotation2dict["source"]:
                 annotation2dict["inference_rule"] = child
-            elif i == 0 and annotation2dict["source"] == "file":
+            elif i == 0 and "file" in annotation2dict["source"]:
                 annotation2dict["file_name"] = child
+            elif "inference" in annotation2dict["source"] and type(child) == Tree and i == len(node.children[0].children) - 1:
+                for grand_child in child.children:
+                    annotation2dict["inference_parents"].append(grand_child)
             elif type(child) == Tree:
                 annotation2dict["useful_info"].append(str(child))
-            elif annotation2dict["source"] == "inference":
-                annotation2dict["inference_parents"].append(child)
             else:
                 annotation2dict["useful_info"].append(str(child))
+        if len(node.children) == 2 and node.children[1].children:
+            annotation2dict["useful_info"].append(
+                str(node.children[1].children))
         return annotation2dict
 
     def __convert_ast2json_formula_info(self, ast_child):
@@ -371,7 +328,7 @@ class ParseTstp():
                 formula_info["name"] (str): formulaの名前
                 formula_info["formula_role"] (str): formulaの役割(axiomやplainなど)
                 formula_info["formula"] (list): formula本体
-                formula_info["annotations"] (list): 参照したformulaの名前などの補足情報
+                formula_info["annotations"] (dict): 参照したformulaの名前などの補足情報
         """
         formula_info = dict()
         formula_info["formula_type"] = ast_child.data
@@ -379,11 +336,9 @@ class ParseTstp():
         formula_info["formula_role"] = ast_child.children[1]
         formula_info["formula"] = self.__convert_ast2json_formula(
             ast_child.children[2])
-        formula_info["annotations"] = list()
-        for annotation in ast_child.children[3].children:
-            if annotation.data != "null":
-                formula_info["annotations"].append(
-                    self.__convert_ast2json_annotation(annotation))
+        if ast_child.children[3].children:
+            formula_info["annotations"] = self.__convert_ast2json_annotation(
+                ast_child.children[3])
         return formula_info
 
     def convert_ast2json(self, ast):
@@ -399,9 +354,8 @@ class ParseTstp():
         """
         ast2json = list()
         for child in ast.children:
-            if type(child) == Tree:
-                formula_info = self.__convert_ast2json_formula_info(child)
-                ast2json.append(formula_info)
+            formula_info = self.__convert_ast2json_formula_info(child)
+            ast2json.append(formula_info)
         return ast2json
 
     def parse_tstp(self, tstp):
@@ -452,17 +406,14 @@ class ParseTstp():
                                 ...
                             ]
                         ,
-                        "annotations":(list): 参考にしたformulaの名前などの補足情報
-                            [
-                                {
-                                    "source":(str): annotationの種類(inference,fileなど)
-                                    "file":(str): 参照しているファイルのパス(annotations[]["source"]が"file"のときのみ存在)
-                                    "inference_rule":(str): どの操作をしているかの情報(annotations[]["source"]が"inference"のときのみ存在)
-                                    "inference_parents":(list): どのformulaを参照しているかの情報(annotations[]["source"]が"inference"のときのみ存在)
-                                    "useful_info":(list): 上記以外の情報を文字列のリストにして保存している
-                                },
-                                ...
-                            ]
+                        "annotations":(dict): 参考にしたformulaの名前などの補足情報
+                            {
+                                "source":(str): annotationの種類(inference,fileなど)
+                                "file":(str): 参照しているファイルのパス(annotations[]["source"]が"file"のときのみ存在)
+                                "inference_rule":(str): どの操作をしているかの情報(annotations[]["source"]が"inference"のときのみ存在)
+                                "inference_parents":(list): どのformulaを参照しているかの情報(annotations[]["source"]が"inference"のときのみ存在)
+                                "useful_info":(list): 上記以外の情報を文字列のリストにして保存している
+                            }
                     },
                     ...
                 ]
