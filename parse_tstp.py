@@ -8,19 +8,33 @@ QUANTIFIER = ("!", "?", "~!", "^", "@+", "@-", "!>", "?*")
 
 NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
 
-# ()や[]があるとき残すノード名
-# key: 子に括弧を含んでいるノード名
-# value: keyのノード名の子で括弧が使用されているノード名
+# ()や[]があるときや子が二つ以上ある場合、記号が含まれている場合、tff_quantified_formulaのように再帰されているノードを例外的に残す場合等のノード名
+# key: 子に括弧を含んでいる、子が二つ以上ある場合、記号が含まれている場合、再帰されているノードを例外的に残すノード名
+# value: keyのノード名の子で括弧が使用されているノード名、例外的に残す再帰されているノード名（子が二つ以上ある場合、記号が含まれている場合はNone）
+
 # 例
 # thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
 # key: thf_unitary_formula
 # value: thf_logic_formula
-NODE_NAME_TO_PARENTHESIS_CONTENT = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
-                                    "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
-                                    "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
-                                    "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
-                                    "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
-                                    "fof_unitary_formula": "fof_logic_formula"}
+
+# tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
+# key: tff_quantified_formula
+# value: tff_variable_list
+
+# thf_quantified_formula : thf_quantification thf_unit_formula
+# kye: thf_quantified_formula
+# value: None
+
+PARENT_NODE_NAME_TO_LEAVE_NODE = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
+                                  "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
+                                  "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
+                                  "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
+                                  "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
+                                  "fof_unitary_formula": "fof_logic_formula", "tff_quantified_formula": "tff_variable_list",
+                                  "fof_quantified_formula": "fof_variable_list", "tf1_quantified_type": "tff_variable_list",
+                                  "tcf_quantified_formula": "tff_variable_list", "annotations": None, "thf_quantified_formula": None,
+                                  "optional_info": None, "thf_tuple": None, "tfx_tuple": None, "tfx_tuple_type": None,
+                                  "fof_formula_tuple": None, "formula_selection": None, "general_list": None}
 
 # 再帰されているノード名
 # 例
@@ -46,36 +60,21 @@ NODE_NAME_USED_OPERATOR = ("thf_binary_nonassoc", "thf_or_formula", "thf_and_for
 NODE_NAME_TO_USED_SYMBOL = {"thf_apply_formula": "@", "thf_typed_variable": "：", "thf_atom_typing": "：",
                             "tff_typed_variable": "：", "tff_atom_typing": "：", "general_term": "：",
                             "tpi_annotated": "tpi", "thf_annotated": "thf", "tff_annotated": "tff", "tcf_annotated": "tcf", "fof_annotated": "fof",
-                            "cnf_annotated": "cnf", "thf_conditional": "$ite", "thf_let": "$let", "tfx_conditional": "$ite", "tfx_let": "$let", "include": "include"}
+                            "cnf_annotated": "cnf", "thf_conditional": "$ite", "thf_let": "$let", "tfx_conditional": "$ite", "tfx_let": "$let", "include": "include",
+                            "tf1_quantified_type": "!>", "tcf_quantified_formula": "!"}
 
 # トークン名(ノード名) もしくは トークン名 ノード名となっているノード名
 # 例
 # thf_quantification   : THF_QUANTIFIER "[" thf_variable_list "]" ":"
 NODE_NAME_USED_FUNCTOR = ("thf_quantification", "thf_prefix_unary", "thf_fof_function", "tff_prefix_unary", "tff_plain_atomic", "tff_defined_plain", "tff_system_atomic",
-                          "tff_atomic_type", "fof_unary_formula", "fof_plain_term", "fof_defined_plain_term", "fof_system_term", "general_function", "literal")
+                          "tff_atomic_type", "fof_unary_formula", "fof_plain_term", "fof_defined_plain_term", "fof_system_term", "general_function", "literal",
+                          "tff_quantified_formula", "fof_quantified_formula")
 
 # formula_dataの子のノード名
 # formula_dataを書き換える文字列は場合によって文字列(ノード名)の文字列が違うため子のノード名をkey、書き換える文字をvalueとしている
 # formula_data         : "$thf(" thf_formula ")" | "$tff(" tff_formula ")" | "$fof(" fof_formula ")" | "$cnf(" cnf_formula ")" | "$fot(" fof_term ")"
 FORMULA_DATA_TO_SYMBOL = {"thf_formula": "$thf", "tff_formula": "$tff",
                           "fof_formula": "$fof", "cnf_formula": "$cnf", "fof_term": "$fot"}
-
-# 飛ばさないノード名
-NODE_NAME_NOT_OMIT = ("annotations", "thf_quantified_formula", "optional_info", "thf_tuple", "tfx_tuple",
-                      "tfx_tuple_type", "fof_formula_tuple", "formula_selection", "general_list")
-
-# トークン名 [ノード名] : ノード名となっているノード名
-# [ノード名]のノード名には再帰されているノード名が入る
-# 例
-# tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
-TFF_AND_FOF_QUANTIFED = ("tff_quantified_formula", "fof_quantified_formula")
-
-# 文字列 [ノード名] : ノード名となっているノード名
-# [ノード名]のノード名には再帰されているノード名が入る
-# 例
-# tf1_quantified_type  : "!>" "[" tff_variable_list "]" ":" tff_monotype
-TF1_AND_TCF_QUANTIFED_TO_SYMBOL = {"tf1_quantified_type": "!>",
-                                   "tcf_quantified_formula": "!"}
 
 
 class ParseTstp():
@@ -135,7 +134,26 @@ class ParseTstp():
             G.edge(str(i), str(j))
         G.render(png_path)
 
-    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), is_leave_variable_list_node=False):
+    def __is_leave_node(self, cst, cst_parent_data):
+        """__is_leave_node
+
+        残すノードかどうかを判定する関数
+
+        Args:
+            cst(Tree or Token): 具象構文木のノード
+            ast(Tree or Token): 抽象構文木のノード
+
+        Returns:
+            (bool): 残すならTrue、省略するならFalse
+        """
+        if cst_parent_data in PARENT_NODE_NAME_TO_LEAVE_NODE and \
+                PARENT_NODE_NAME_TO_LEAVE_NODE[cst_parent_data] == cst.data or \
+                cst.data in PARENT_NODE_NAME_TO_LEAVE_NODE and PARENT_NODE_NAME_TO_LEAVE_NODE[cst.data] == None:
+            return True
+        else:
+            return False
+
+    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), cst_parent_data=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -143,61 +161,54 @@ class ParseTstp():
         Args:
             cst(Tree or Token): 具象構文木のノード
             ast(Tree or Token): 抽象構文木のノード
-            is_leave_variable_list_node(bool): 再帰が使用されているノードを例外的に飛ばさない場合かどうか
+            cst_parent_data(str): 具象構文木の親のノード名
 
         Returns:
             ast(Tree): 最終的に作成される抽象構文木
         """
-        is_leave_node = True
-        if type(cst) == Tree:
-            # 飛ばさない場合は抽象構文木に加える
-            if cst.data in NODE_NAME_NOT_OMIT or is_leave_variable_list_node or cst.data in NODE_NAME_TO_PARENTHESIS_CONTENT and type(cst.children[0]) == Tree and NODE_NAME_TO_PARENTHESIS_CONTENT[cst.data] == cst.children[0].data:
-                ast.children.append(Tree(cst.data, []))
-                is_leave_variable_list_node = False
-            # ノード名 トークン ノード名となっている場合はトークンに書き換える
-            elif cst.data in NODE_NAME_USED_OPERATOR and len(cst.children) == 3:
-                operator = cst.children.pop(1)
-                ast.children.append(
-                    Tree(operator.value + "," + operator.type, []))
-            # ノード名 記号 ノード名 or 記号(ノード名)となっている場合は記号に書き換える
-            elif cst.data in NODE_NAME_TO_USED_SYMBOL and len(cst.children) >= 2:
-                ast.children.append(
-                    Tree(NODE_NAME_TO_USED_SYMBOL[cst.data] + "," + cst.data, []))
-            # トークン名(ノード名...)となっている場合はトークンに書き換える
-            elif cst.data in NODE_NAME_USED_FUNCTOR and len(cst.children) >= 2:
-                functor = cst.children.pop(0)
-                ast.children.append(
-                    Tree(functor.value + "," + functor.type, []))
-            # ノード名がformula_dataの場合はそれぞれの文字列に書き換える
-            elif cst.data == "formula_data":
-                ast.children.append(
-                    Tree(FORMULA_DATA_TO_SYMBOL[cst.children[0].data], []))
-            # トークン名 [ノード名] : ノード名となっている場合はトークンに書き換えて、[ノード名]のノード名は飛ばさないようにする(どこまでが[ノード名]のノード名なのか判別できるようにするため)
-            elif cst.data in TFF_AND_FOF_QUANTIFED:
-                symbol = cst.children.pop(0)
-                ast.children.append(Tree(symbol.value + "," + symbol.type, []))
-                is_leave_variable_list_node = True
-            # 文字列 [ノード名] : ノード名となっている場合は文字列に書き換えて、[ノード名]のノード名は飛ばさないようにする(どこまでが[ノード名]のノード名なのか判別できるようにするため)
-            elif cst.data in TF1_AND_TCF_QUANTIFED_TO_SYMBOL:
-                ast.children.append(
-                    Tree(TF1_AND_TCF_QUANTIFED_TO_SYMBOL[cst.data], []))
-                is_leave_variable_list_node = True
-            else:
-                is_leave_node = False
-            for i, child in enumerate(cst.children):
-                if i != 0:
-                    is_leave_variable_list_node = False
-                if type(child) == Tree and child.data == "null":
-                    continue
-                if is_leave_node:
-                    self.convert_cst2ast(
-                        child, ast.children[-1], is_leave_variable_list_node)
-                else:
-                    self.convert_cst2ast(
-                        child, ast, is_leave_variable_list_node)
         # トークンの場合
-        else:
+        if type(cst) != Tree:
             ast.children.append(cst)
+            return ast
+
+        # astに子が追加されたかどうか
+        is_add_ast_children = False
+
+        # 飛ばさない場合は抽象構文木に加える
+        if self.__is_leave_node(cst, cst_parent_data):
+            ast.children.append(Tree(cst.data, []))
+            is_add_ast_children = True
+        # ノード名 トークン ノード名となっている場合はトークンに書き換える
+        if cst.data in NODE_NAME_USED_OPERATOR and len(cst.children) == 3:
+            operator = cst.children.pop(1)
+            ast.children.append(
+                Tree(operator.value + "," + operator.type, []))
+            is_add_ast_children = True
+        # ノード名 記号 ノード名 or 記号(ノード名)となっている場合は記号に書き換える
+        if cst.data in NODE_NAME_TO_USED_SYMBOL and len(cst.children) >= 2:
+            ast.children.append(
+                Tree(NODE_NAME_TO_USED_SYMBOL[cst.data] + "," + cst.data, []))
+            is_add_ast_children = True
+        # トークン名(ノード名...)となっている場合はトークンに書き換える
+        if cst.data in NODE_NAME_USED_FUNCTOR and len(cst.children) >= 2:
+            functor = cst.children.pop(0)
+            ast.children.append(
+                Tree(functor.value + "," + functor.type, []))
+            is_add_ast_children = True
+        # ノード名がformula_dataの場合はそれぞれの文字列に書き換える
+        if cst.data == "formula_data":
+            ast.children.append(
+                Tree(FORMULA_DATA_TO_SYMBOL[cst.children[0].data], []))
+            is_add_ast_children = True
+        for child in cst.children:
+            # astに子が追加されている場合は追加した子にノードを追加していく
+            if is_add_ast_children:
+                self.convert_cst2ast(
+                    child, ast.children[-1], cst.data)
+            else:
+                self.convert_cst2ast(
+                    child, ast, cst.data)
+
         return ast
 
     def __convert_ast2json_formula(self, node, json_formula=None):
