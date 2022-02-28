@@ -36,12 +36,6 @@ PARENT_NODE_NAME_TO_LEAVE_NODE = {"thf_unitary_formula": "thf_logic_formula", "t
                                   "optional_info": None, "thf_tuple": None, "tfx_tuple": None, "tfx_tuple_type": None,
                                   "fof_formula_tuple": None, "formula_selection": None, "general_list": None}
 
-# 再帰されているノード名
-# 例
-# thf_variable_list    : thf_typed_variable | thf_typed_variable "," thf_variable_list
-NODE_NAME_USED_RECURSION = ("thf_variable_list", "thf_atom_typing_list", "thf_let_defn_list", "thf_formula_list", "tff_variable_list", "tff_atom_typing_list", "tfx_let_defn_list",
-                            "tff_arguments", "tff_type_arguments", "tff_type_list", "fof_variable_list", "fof_arguments", "fof_formula_tuple_list", "name_list", "general_terms")
-
 # ノード名orトークン名 トークン名 ノード名orトークン名となっているノード名
 # 例
 # thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
