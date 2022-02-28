@@ -8,9 +8,9 @@ QUANTIFIER = ("!", "?", "~!", "^", "@+", "@-", "!>", "?*")
 
 NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
 
-# ()や[]があるときや子が二つ以上ある場合、記号が含まれている場合、tff_quantified_formulaのように再帰されているノードを例外的に残す場合等のノード名
-# key: 子に括弧を含んでいる、子が二つ以上ある場合、記号が含まれている場合、再帰されているノードを例外的に残すノード名
-# value: keyのノード名の子で括弧が使用されているノード名、例外的に残す再帰されているノード名（子が二つ以上ある場合、記号が含まれている場合はNone）
+# ()や[]があるときや子が二つ以上ある場合、tff_quantified_formulaのように再帰されているノードを例外的に残す場合等のノード名
+# key: 子に括弧を含んでいる、子が二つ以上ある場合、再帰されているノードを例外的に残すノード名
+# value: keyのノード名の子で括弧が使用されているノード名、例外的に残す再帰されているノード名（どの場合でも括弧が使用されている、子が二つ以上ある場合等はNone）
 
 # 例
 # thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
@@ -141,7 +141,7 @@ class ParseTstp():
 
         Args:
             cst(Tree): 具象構文木のノード
-            cst_parent_data(Tree): cstの親のノード
+            cst_parent_data(Tree): 具象構文木の親のノード名
 
         Returns:
             (bool): 残すならTrue、省略するならFalse
@@ -160,7 +160,7 @@ class ParseTstp():
 
         Args:
             cst(Tree or Token): 具象構文木のノード
-            ast(Tree or Token): 抽象構文木のノード
+            ast(Tree): 抽象構文木のノード
             cst_parent_data(str): 具象構文木の親のノード名
 
         Returns:
