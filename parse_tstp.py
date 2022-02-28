@@ -140,8 +140,8 @@ class ParseTstp():
         残すノードかどうかを判定する関数
 
         Args:
-            cst(Tree or Token): 具象構文木のノード
-            ast(Tree or Token): 抽象構文木のノード
+            cst(Tree): 具象構文木のノード
+            cst_parent_data(Tree): cstの親のノード
 
         Returns:
             (bool): 残すならTrue、省略するならFalse
