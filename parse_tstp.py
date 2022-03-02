@@ -2,11 +2,14 @@ import json
 from graphviz import Digraph
 from lark import Lark, Tree
 
-OPERATOR = ("|", ":=", ">", "*", "+", "<<", "-->", "&")
-
-QUANTIFIER = ("!", "?", "~!", "^", "@+", "@-", "!>", "?*")
-
-NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
+SYMBOL2TYPE = {":=": "assignment", ">": "arrow", "<": "less_sign", "*": "star", "+": "plus",
+               "<<": "subtype_sign", "-->": "gentzen_arrow", "!": "quantifier", "?": "quantifier",
+               "~!": "quantifier", "^": "quantifier", "@+": "quantifier", "@-": "quantifier",
+               "!>": "quantifier", "?*": "quantifier", "|": "connective", "&": "connective",
+               "<=>": "connective", "=>": "connective", "<=": "connective", "<~>": "connective",
+               "~|": "connective", "~&": "connective", "=": "equality", "!=": "equality",
+               "!!": "defined_term", "??": "defined_term", "@@+": "defined_term", "@@-": "defined_term",
+               "@=": "defined_term"}
 
 # ()や[]があるときや子が二つ以上ある場合、tff_quantified_formulaのように再帰されているノードを例外的に残す場合等のノード名
 # key: 子に括弧を含んでいる、子が二つ以上ある場合、再帰されているノードを例外的に残すノード名
@@ -24,25 +27,24 @@ NONASSOC_CONNECTIVE = ("<=>", "=>", "<=", "<~>", "~|", "~&")
 # thf_quantified_formula : thf_quantification thf_unit_formula
 # kye: thf_quantified_formula
 # value: None
-
-PARENT_NODE_NAME_TO_LEAVE_NODE = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
-                                  "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
-                                  "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
-                                  "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
-                                  "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
-                                  "fof_unitary_formula": "fof_logic_formula", "tff_quantified_formula": "tff_variable_list",
-                                  "fof_quantified_formula": "fof_variable_list", "tf1_quantified_type": "tff_variable_list",
-                                  "tcf_quantified_formula": "tff_variable_list", "annotations": None, "thf_quantified_formula": None,
-                                  "optional_info": None, "thf_tuple": None, "tfx_tuple": None, "tfx_tuple_type": None,
-                                  "fof_formula_tuple": None, "formula_selection": None, "general_list": None}
+PARENT_NODE_TO_LEAVE_NODE = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
+                             "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
+                             "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
+                             "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
+                             "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
+                             "fof_unitary_formula": "fof_logic_formula", "tff_quantified_formula": "tff_variable_list",
+                             "fof_quantified_formula": "fof_variable_list", "tf1_quantified_type": "tff_variable_list",
+                             "tcf_quantified_formula": "tff_variable_list", "annotations": None, "thf_quantified_formula": None,
+                             "optional_info": None, "thf_tuple": None, "tfx_tuple": None, "tfx_tuple_type": None,
+                             "fof_formula_tuple": None, "formula_selection": None, "general_list": None}
 
 # ノード名orトークン名 トークン名 ノード名orトークン名となっているノード名
 # 例
 # thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
-NODE_NAME_USED_OPERATOR = ("thf_binary_nonassoc", "thf_or_formula", "thf_and_formula", "thf_infix_unary", "thf_defined_infix", "thf_let_defn", "thf_mapping_type", "thf_xprod_type",
-                           "thf_union_type", "thf_subtype", "thf_sequent", "tff_binary_nonassoc", "tff_or_formula", "tff_and_formula", "tff_infix_unary", "tff_defined_infix",
-                           "tfx_let_defn", "tff_mapping_type", "tff_xprod_type", "tff_subtype", "tfx_sequent", "fof_binary_nonassoc", "fof_or_formula", "fof_and_formula",
-                           "fof_infix_unary", "fof_defined_infix_formula", "fof_sequent", "disjunction")
+NODE_TO_REPLACE_MIDDLE_CHILD_NODE = ("thf_binary_nonassoc", "thf_or_formula", "thf_and_formula", "thf_infix_unary", "thf_defined_infix", "thf_let_defn", "thf_mapping_type", "thf_xprod_type",
+                                     "thf_union_type", "thf_subtype", "thf_sequent", "tff_binary_nonassoc", "tff_or_formula", "tff_and_formula", "tff_infix_unary", "tff_defined_infix",
+                                     "tfx_let_defn", "tff_mapping_type", "tff_xprod_type", "tff_subtype", "tfx_sequent", "fof_binary_nonassoc", "fof_or_formula", "fof_and_formula",
+                                     "fof_infix_unary", "fof_defined_infix_formula", "fof_sequent", "disjunction")
 
 # ノード名orトークン名 文字列 ノード名orトークン名 もしくは 文字列(ノード名)となっているノード名
 # key: 子に記号を含んでいるノード名
@@ -51,24 +53,24 @@ NODE_NAME_USED_OPERATOR = ("thf_binary_nonassoc", "thf_or_formula", "thf_and_for
 # thf_apply_formula    : thf_unit_formula "@" thf_unit_formula | thf_apply_formula "@" thf_unit_formula
 # key: thf_apply_formula
 # value: @
-NODE_NAME_TO_USED_SYMBOL = {"thf_apply_formula": "@", "thf_typed_variable": "：", "thf_atom_typing": "：",
-                            "tff_typed_variable": "：", "tff_atom_typing": "：", "general_term": "：",
-                            "tpi_annotated": "tpi", "thf_annotated": "thf", "tff_annotated": "tff", "tcf_annotated": "tcf", "fof_annotated": "fof",
-                            "cnf_annotated": "cnf", "thf_conditional": "$ite", "thf_let": "$let", "tfx_conditional": "$ite", "tfx_let": "$let", "include": "include",
-                            "tf1_quantified_type": "!>", "tcf_quantified_formula": "!"}
+NODE_TO_REPLACE_SYMBOL = {"thf_apply_formula": "@", "thf_typed_variable": "：", "thf_atom_typing": "：",
+                          "tff_typed_variable": "：", "tff_atom_typing": "：", "general_term": "：",
+                          "tpi_annotated": "tpi", "thf_annotated": "thf", "tff_annotated": "tff", "tcf_annotated": "tcf", "fof_annotated": "fof",
+                          "cnf_annotated": "cnf", "thf_conditional": "$ite", "thf_let": "$let", "tfx_conditional": "$ite", "tfx_let": "$let", "include": "include",
+                          "tf1_quantified_type": "!>", "tcf_quantified_formula": "!"}
 
 # トークン名(ノード名) もしくは トークン名 ノード名となっているノード名
 # 例
 # thf_quantification   : THF_QUANTIFIER "[" thf_variable_list "]" ":"
-NODE_NAME_USED_FUNCTOR = ("thf_quantification", "thf_prefix_unary", "thf_fof_function", "tff_prefix_unary", "tff_plain_atomic", "tff_defined_plain", "tff_system_atomic",
-                          "tff_atomic_type", "fof_unary_formula", "fof_plain_term", "fof_defined_plain_term", "fof_system_term", "general_function", "literal",
-                          "tff_quantified_formula", "fof_quantified_formula")
+NODE_TO_REPLACE_LEFT_CHILD_NODE = ("thf_quantification", "thf_prefix_unary", "thf_fof_function", "tff_prefix_unary", "tff_plain_atomic", "tff_defined_plain", "tff_system_atomic",
+                                   "tff_atomic_type", "fof_unary_formula", "fof_plain_term", "fof_defined_plain_term", "fof_system_term", "general_function", "literal",
+                                   "tff_quantified_formula", "fof_quantified_formula")
 
 # formula_dataの子のノード名
 # formula_dataを書き換える文字列は場合によって文字列(ノード名)の文字列が違うため子のノード名をkey、書き換える文字をvalueとしている
 # formula_data         : "$thf(" thf_formula ")" | "$tff(" tff_formula ")" | "$fof(" fof_formula ")" | "$cnf(" cnf_formula ")" | "$fot(" fof_term ")"
-FORMULA_DATA_TO_SYMBOL = {"thf_formula": "$thf", "tff_formula": "$tff",
-                          "fof_formula": "$fof", "cnf_formula": "$cnf", "fof_term": "$fot"}
+FORMULA_DATA_TO_REPLACE_SYMBOL = {"thf_formula": "$thf", "tff_formula": "$tff",
+                                  "fof_formula": "$fof", "cnf_formula": "$cnf", "fof_term": "$fot"}
 
 
 class ParseTstp():
@@ -141,9 +143,9 @@ class ParseTstp():
         Returns:
             (bool): 残すならTrue、省略するならFalse
         """
-        if cst_parent_data in PARENT_NODE_NAME_TO_LEAVE_NODE and \
-                PARENT_NODE_NAME_TO_LEAVE_NODE[cst_parent_data] == cst.data or \
-                cst.data in PARENT_NODE_NAME_TO_LEAVE_NODE and PARENT_NODE_NAME_TO_LEAVE_NODE[cst.data] == None:
+        if cst_parent_data in PARENT_NODE_TO_LEAVE_NODE and \
+                PARENT_NODE_TO_LEAVE_NODE[cst_parent_data] == cst.data or \
+                cst.data in PARENT_NODE_TO_LEAVE_NODE and PARENT_NODE_TO_LEAVE_NODE[cst.data] == None:
             return True
         else:
             return False
@@ -174,18 +176,18 @@ class ParseTstp():
             ast.children.append(Tree(cst.data, []))
             is_add_ast_children = True
         # ノード名 トークン ノード名となっている場合はトークンに書き換える
-        if cst.data in NODE_NAME_USED_OPERATOR and len(cst.children) == 3:
+        if cst.data in NODE_TO_REPLACE_MIDDLE_CHILD_NODE and len(cst.children) == 3:
             operator = cst.children.pop(1)
             ast.children.append(
                 Tree(operator.value + "," + operator.type, []))
             is_add_ast_children = True
         # ノード名 記号 ノード名 or 記号(ノード名)となっている場合は記号に書き換える
-        if cst.data in NODE_NAME_TO_USED_SYMBOL and len(cst.children) >= 2:
+        if cst.data in NODE_TO_REPLACE_SYMBOL and len(cst.children) >= 2:
             ast.children.append(
-                Tree(NODE_NAME_TO_USED_SYMBOL[cst.data] + "," + cst.data, []))
+                Tree(NODE_TO_REPLACE_SYMBOL[cst.data] + "," + cst.data, []))
             is_add_ast_children = True
         # トークン名(ノード名...)となっている場合はトークンに書き換える
-        if cst.data in NODE_NAME_USED_FUNCTOR and len(cst.children) >= 2:
+        if cst.data in NODE_TO_REPLACE_LEFT_CHILD_NODE and len(cst.children) >= 2:
             functor = cst.children.pop(0)
             ast.children.append(
                 Tree(functor.value + "," + functor.type, []))
@@ -193,7 +195,7 @@ class ParseTstp():
         # ノード名がformula_dataの場合はそれぞれの文字列に書き換える
         if cst.data == "formula_data":
             ast.children.append(
-                Tree(FORMULA_DATA_TO_SYMBOL[cst.children[0].data], []))
+                Tree(FORMULA_DATA_TO_REPLACE_SYMBOL[cst.children[0].data], []))
             is_add_ast_children = True
         for child in cst.children:
             # astに子が追加されている場合は追加した子にノードを追加していく
@@ -242,22 +244,14 @@ class ParseTstp():
         if type(node) == Tree:
             if "," in node.data:
                 node_name, node_type = node.data.split(",")
-                if node_name == "=" or node_name == "!=":
-                    dict_formula["type"] = "equality"
-                elif node_name in QUANTIFIER:
-                    dict_formula["type"] = "quantifier"
-                elif node_name in NONASSOC_CONNECTIVE:
-                    dict_formula["type"] = "connectives"
-                elif node_name in OPERATOR:
-                    dict_formula["type"] = "operator"
-                elif node_name == "~":
-                    dict_formula["type"] = "negation"
+                if node_name in SYMBOL2TYPE:
+                    dict_formula["type"] = SYMBOL2TYPE[node_name]
                 elif "FUNCTOR" in node_type:
                     dict_formula["type"] = "function"
-                elif node_type == "ATOMIC_WORD":
-                    dict_formula["type"] = "atomic_word"
+                else:
+                    dict_formula["type"] = node_type
             else:
-                dict_formula["type"] = "node_name"
+                dict_formula["type"] = None
             dict_formula["symbol"] = node.data
             dict_formula["children"] = list()
             json_formula.append(dict_formula)
@@ -266,13 +260,8 @@ class ParseTstp():
                     child, json_formula[-1]["children"])
         # Tokenの場合
         else:
-            if node.isupper():
-                dict_formula["type"] = "variable"
-            elif node == "$false" or node == "$true":
-                dict_formula["type"] = "boolean-constant"
-            else:
-                dict_formula["type"] = "constant"
-            dict_formula["symbol"] = node
+            dict_formula["type"] = node.type
+            dict_formula["symbol"] = node.value
             json_formula.append(dict_formula)
 
         return json_formula
@@ -303,16 +292,11 @@ class ParseTstp():
                 annotation2dict["inference_rule"] = child
             elif i == 0 and "file" in annotation2dict["source"]:
                 annotation2dict["file_name"] = child
-            elif "inference" in annotation2dict["source"] and type(child) == Tree and i == len(node.children[0].children) - 1:
+            elif "inference" in annotation2dict["source"] and i == len(node.children[0].children) - 1:
                 for grand_child in child.children:
                     annotation2dict["inference_parents"].append(grand_child)
-            elif type(child) == Tree:
-                annotation2dict["useful_info"].append(str(child))
             else:
                 annotation2dict["useful_info"].append(str(child))
-        if len(node.children) == 2 and node.children[1].children:
-            annotation2dict["useful_info"].append(
-                str(node.children[1].children))
         return annotation2dict
 
     def __convert_ast2json_formula_info(self, ast_child):
