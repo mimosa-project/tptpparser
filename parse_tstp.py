@@ -2,6 +2,9 @@ import json
 from graphviz import Digraph
 from lark import Lark, Tree
 
+# 抽象構文木からjsonに変換する際に記号の型を保存するときに使用する
+# key: 記号
+# value: 記号の型
 SYMBOL2TYPE = {":=": "assignment", ">": "arrow", "<": "less_sign", "*": "star", "+": "plus",
                "<<": "subtype_sign", "-->": "gentzen_arrow", "!": "quantifier", "?": "quantifier",
                "~!": "quantifier", "^": "quantifier", "@+": "quantifier", "@-": "quantifier",
@@ -244,6 +247,7 @@ class ParseTstp():
         if type(node) == Tree:
             if "," in node.data:
                 node_name, node_type = node.data.split(",")
+                dict_formula["symbol"] = node_name
                 if node_name in SYMBOL2TYPE:
                     dict_formula["type"] = SYMBOL2TYPE[node_name]
                 elif "FUNCTOR" in node_type:
@@ -252,7 +256,7 @@ class ParseTstp():
                     dict_formula["type"] = node_type
             else:
                 dict_formula["type"] = None
-            dict_formula["symbol"] = node.data
+                dict_formula["symbol"] = node.data
             dict_formula["children"] = list()
             json_formula.append(dict_formula)
             for child in node.children:
