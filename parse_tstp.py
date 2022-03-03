@@ -263,7 +263,10 @@ class ParseTstp():
             else:
                 dict_formula["type"] = node_type
         else:
-            dict_formula["type"] = None
+            if node.data in SYMBOL2TYPE:
+                dict_formula["type"] = SYMBOL2TYPE[node.data]
+            else:
+                dict_formula["type"] = None
             dict_formula["symbol"] = node.data
         dict_formula["children"] = list()
         json_formula.append(dict_formula)
