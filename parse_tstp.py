@@ -141,7 +141,7 @@ class ParseTstp():
 
         Args:
             cst(Tree): 具象構文木のノード
-            cst_parent_data(Tree): 具象構文木の親のノード名
+            cst_parent_data(Tree): cstの親のノード名
 
         Returns:
             (bool): 残すならTrue、省略するならFalse
@@ -161,7 +161,7 @@ class ParseTstp():
         Args:
             cst(Tree or Token): 具象構文木のノード
             ast(Tree): 抽象構文木のノード
-            cst_parent_data(str): 具象構文木の親のノード名
+            cst_parent_data(str): cstの親のノード名
 
         Returns:
             ast(Tree): 最終的に作成される抽象構文木
@@ -180,9 +180,9 @@ class ParseTstp():
             is_add_ast_children = True
         # ノード名 トークン ノード名となっている場合はトークンに書き換える
         if cst.data in NODE_TO_REPLACE_MIDDLE_CHILD_NODE and len(cst.children) == 3:
-            operator = cst.children.pop(1)
+            middle_child = cst.children.pop(1)
             ast.children.append(
-                Tree(operator.value + "," + operator.type, []))
+                Tree(middle_child.value + "," + middle_child.type, []))
             is_add_ast_children = True
         # ノード名 記号 ノード名 or 記号(ノード名)となっている場合は記号に書き換える
         if cst.data in NODE_TO_REPLACE_SYMBOL and len(cst.children) >= 2:
@@ -191,9 +191,9 @@ class ParseTstp():
             is_add_ast_children = True
         # トークン名(ノード名...)となっている場合はトークンに書き換える
         if cst.data in NODE_TO_REPLACE_LEFT_CHILD_NODE and len(cst.children) >= 2:
-            functor = cst.children.pop(0)
+            left_child = cst.children.pop(0)
             ast.children.append(
-                Tree(functor.value + "," + functor.type, []))
+                Tree(left_child.value + "," + left_child.type, []))
             is_add_ast_children = True
         # ノード名がformula_dataの場合はそれぞれの文字列に書き換える
         if cst.data == "formula_data":
@@ -244,29 +244,32 @@ class ParseTstp():
         if json_formula is None:
             json_formula = list()
         dict_formula = dict()
-        if type(node) == Tree:
-            if "," in node.data:
-                node_name, node_type = node.data.split(",")
-                dict_formula["symbol"] = node_name
-                if node_name in SYMBOL2TYPE:
-                    dict_formula["type"] = SYMBOL2TYPE[node_name]
-                elif "FUNCTOR" in node_type:
-                    dict_formula["type"] = "function"
-                else:
-                    dict_formula["type"] = node_type
-            else:
-                dict_formula["type"] = None
-                dict_formula["symbol"] = node.data
-            dict_formula["children"] = list()
-            json_formula.append(dict_formula)
-            for child in node.children:
-                self.__convert_ast2json_formula(
-                    child, json_formula[-1]["children"])
+
         # Tokenの場合
-        else:
+        if type(node) != Tree:
             dict_formula["type"] = node.type
             dict_formula["symbol"] = node.value
             json_formula.append(dict_formula)
+            return json_formula
+
+        # 抽象構文木を作成する際に中心または左のトークンに書き換えたノードの場合
+        if "," in node.data:
+            node_name, node_type = node.data.split(",")
+            dict_formula["symbol"] = node_name
+            if node_name in SYMBOL2TYPE:
+                dict_formula["type"] = SYMBOL2TYPE[node_name]
+            elif "FUNCTOR" in node_type:
+                dict_formula["type"] = "function"
+            else:
+                dict_formula["type"] = node_type
+        else:
+            dict_formula["type"] = None
+            dict_formula["symbol"] = node.data
+        dict_formula["children"] = list()
+        json_formula.append(dict_formula)
+        for child in node.children:
+            self.__convert_ast2json_formula(
+                child, json_formula[-1]["children"])
 
         return json_formula
 
@@ -296,7 +299,7 @@ class ParseTstp():
                 annotation2dict["inference_rule"] = child
             elif i == 0 and "file" in annotation2dict["source"]:
                 annotation2dict["file_name"] = child
-            elif "inference" in annotation2dict["source"] and i == len(node.children[0].children) - 1:
+            elif "inference" in annotation2dict["source"] and i == 2:
                 for grand_child in child.children:
                     annotation2dict["inference_parents"].append(grand_child)
             else:
