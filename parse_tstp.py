@@ -181,16 +181,19 @@ class ParseTstp():
 
         if cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][0]:
             for i, child in enumerate(cst.children):
+                # トークンを上に上げる場合
                 if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data][1]:
                     token = cst.children.pop(i)
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
+                # ノード名がformula_dataの場合
                 if type(child) == Tree and child.data in NODE_MODIFICATION_RULE[cst.data][0]:
                     symbol_index = NODE_MODIFICATION_RULE[cst.data][0].index(
                         child.data)
                     ast.children.append(
                         Tree(NODE_MODIFICATION_RULE[cst.data][1][symbol_index] + "," + cst.data, []))
             is_add_ast_children = True
+        # 記号に書き換える場合
         elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2:
             ast.children.append(
                 Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
