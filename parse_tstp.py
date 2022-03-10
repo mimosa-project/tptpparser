@@ -14,65 +14,69 @@ SYMBOL2TYPE = {":=": "assignment", ">": "arrow", "<": "less_sign", "*": "star", 
                "!!": "defined_term", "??": "defined_term", "@@+": "defined_term", "@@-": "defined_term",
                "@=": "defined_term"}
 
-# ()や[]があるときや子が二つ以上ある場合、tff_quantified_formulaのように再帰されているノードを例外的に残す場合等のノード名
-# key: 子に括弧を含んでいる、子が二つ以上ある場合、再帰されているノードを例外的に残すノード名
-# value: keyのノード名の子で括弧が使用されているノード名、例外的に残す再帰されているノード名（どの場合でも括弧が使用されている、子が二つ以上ある場合等はNone）
+# 方針
+# 基本的に子が一つしかなく記号などを含んでいない場合は飛ばす
+# 子が二つ以上あるものは基本的に残す
+# トークンは全て残す
+# 子が二つ以上ある場合の内、ノードA : ノードB "," ノードAのように再帰されているものは飛ばすそれ以外は残す
+# ノード名 : ノード名 |...| "(" ノード名 ")" or "[" ノード名 "]"が親ノードで子が"(" ノード名 ")" or "[" ノード名 "]"のときの子ノードは残す
+# thf_atom_typing : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
+# ノード名 トークン(+など)or記号(@など) ノード名となっている場合はそのノードをトークン、記号に書き換え、子のトークンを消す
+# 文字列"("ノード名...")" or トークン"("ノード名...")" or トークン ノード名...となっている場合は、文字列、トークンに書き換え、子のトークンを消す
 
-# 例
-# thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
-# key: thf_unitary_formula
-# value: thf_logic_formula
-
-# tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
-# key: tff_quantified_formula
-# value: tff_variable_list
-
-# thf_quantified_formula : thf_quantification thf_unit_formula
-# kye: thf_quantified_formula
-# value: None
-PARENT_NODE_TO_LEAVE_NODE = {"thf_unitary_formula": "thf_logic_formula", "thf_defined_atomic": "THF_CONN_TERM",
-                             "tff_unitary_formula": "tff_logic_formula", "tfx_let_types": "tff_atom_typing_list",
-                             "tfx_let_defns": "tfx_let_defn_list", "tff_unitary_term": "tff_logic_formula",
-                             "tfx_tuple": "tff_arguments", "tff_monotype": "tff_mapping_type",
-                             "tff_unitary_type": "tff_xprod_type", "tfx_tuple_type": "tff_type_list",
-                             "fof_unitary_formula": "fof_logic_formula", "tff_quantified_formula": "tff_variable_list",
-                             "fof_quantified_formula": "fof_variable_list", "tf1_quantified_type": "tff_variable_list",
-                             "tcf_quantified_formula": "tff_variable_list", "annotations": None, "thf_quantified_formula": None,
-                             "optional_info": None, "thf_tuple": None, "tfx_tuple": None, "tfx_tuple_type": None,
-                             "fof_formula_tuple": None, "formula_selection": None, "general_list": None}
+# tf1_quantified_type : "!>" "[" tff_variable_list "]" ":" tff_monotypeや、
+# tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formulaのように
+# 文字列 or トークン"[" ノード名 "]" ":" ノード名となっている場合は、文字列、トークンに書き換えて、子のトークンを消す
+# この時、"[" ノード名 "]"のノード名は飛ばさないようにする
+# 理由
+# "[" ノード名 "]"はノードA : ノードB "," ノードAのように再帰されている
+# これを飛ばすとtf1_quantified_type等のノードの子に"[" ノード名 "]"を展開したものと":" ノード名が来る
+# これだと子を見た時、どこまでが"[" ノード名 "]"を展開したものなのか判別不能なため、このような場合のみ"[" ノード名 "]"を残す
 
 # 抽象構文木を作る際に使用するmap
-# key: 親のノード
-# value: [消したいノード, 新しい親ノードの名前]
-NODE_MODIFICATION_RULE = {"thf_binary_nonassoc": ["NONASSOC_CONNECTIVE", "NONASSOC_CONNECTIVE"], "thf_or_formula": ["VLINE", "VLINE"],
-                          "thf_and_formula": ["AND_CONNECTIVE", "AND_CONNECTIVE"], "thf_infix_unary": ["INFIX_INEQUALITY", "INFIX_INEQUALITY"],
-                          "thf_defined_infix": ["DEFINED_INFIX_PRED", "DEFINED_INFIX_PRED"], "thf_let_defn": ["ASSIGNMENT", "ASSIGNMENT"],
-                          "thf_mapping_type": ["ARROW", "ARROW"], "thf_xprod_type": ["STAR", "STAR"], "thf_union_type": ["PLUS", "PLUS"],
-                          "thf_subtype": ["SUBTYPE_SIGN", "SUBTYPE_SIGN"], "thf_sequent": ["GENTZEN_ARROW", "GENTZEN_ARROW"],
-                          "tff_binary_nonassoc": ["NONASSOC_CONNECTIVE", "NONASSOC_CONNECTIVE"], "tff_or_formula": ["VLINE", "VLINE"],
-                          "tff_and_formula": ["AND_CONNECTIVE", "AND_CONNECTIVE"], "tff_infix_unary": ["INFIX_INEQUALITY", "INFIX_INEQUALITY"],
-                          "tff_infix_unary": ["INFIX_INEQUALITY", "INFIX_INEQUALITY"], "tff_defined_infix": ["DEFINED_INFIX_PRED", "DEFINED_INFIX_PRED"],
-                          "tfx_let_defn": ["ASSIGNMENT", "ASSIGNMENT"], "tff_mapping_type": ["ARROW", "ARROW"], "tff_xprod_type": ["STAR", "STAR"],
-                          "tff_subtype": ["SUBTYPE_SIGN", "SUBTYPE_SIGN"], "tfx_sequent": ["GENTZEN_ARROW", "GENTZEN_ARROW"],
-                          "fof_binary_nonassoc": ["NONASSOC_CONNECTIVE", "NONASSOC_CONNECTIVE"], "fof_or_formula": ["VLINE", "VLINE"],
-                          "fof_and_formula": ["AND_CONNECTIVE", "AND_CONNECTIVE"], "fof_infix_unary": ["INFIX_INEQUALITY", "INFIX_INEQUALITY"],
-                          "fof_defined_infix_formula": ["DEFINED_INFIX_PRED", "DEFINED_INFIX_PRED"], "fof_sequent": ["GENTZEN_ARROW", "GENTZEN_ARROW"],
-                          "disjunction": ["VLINE", "VLINE"],
+# key: 現在のノード
+# value: [残す親ノードの条件, 新しいノードの名前]
+# 残す親ノードの条件(str or list or None): 親ノード名と等しいもしくはlistの中のどれかが親ノードならば残す。Noneなら無条件で残す。
+# 新しいノードの名前(str or list or None): 記号もしくはトークンに書き換える。Noneならそのまま。
+NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "tff_logic_formula": ["tff_unitary_formula", None],
+                          "tff_atom_typing_list": ["tfx_let_types", None], "tfx_let_defn_list": ["tfx_let_defns", None],
+                          "tff_logic_formula": ["tff_unitary_term", None], "tff_arguments": ["tfx_tuple", None],
+                          "tff_mapping_type": ["tff_monotype", None], "tff_xprod_type": ["tff_unitary_type", None],
+                          "tff_type_list": ["tfx_tuple_type", None], "fof_logic_formula": ["fof_unitary_formula", None],
+                          "tff_variable_list": ["tff_quantified_formula", None], "fof_variable_list": ["fof_quantified_formula", None],
+                          "tff_variable_list": ["tf1_quantified_type", None], "tff_variable_list": ["tcf_quantified_formula", None],
+                          "annotations": [None, None], "thf_quantified_formula": [None, None], "optional_info": [None, None],
+                          "thf_tuple": [None, None], "tfx_tuple": [None, None], "tfx_tuple_type": [None, None], "fof_formula_tuple": [None, None],
+                          "formula_selection": [None, None], "general_list": [None, None],
+                          "thf_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "thf_or_formula": [None, "VLINE"],
+                          "thf_and_formula": [None, "AND_CONNECTIVE"], "thf_infix_unary": [None, "INFIX_INEQUALITY"],
+                          "thf_defined_infix": [None, "DEFINED_INFIX_PRED"], "thf_let_defn": [None, "ASSIGNMENT"],
+                          "thf_mapping_type": [None, "ARROW"], "thf_xprod_type": [None, "STAR"], "thf_union_type": [None, "PLUS"],
+                          "thf_subtype": [None, "SUBTYPE_SIGN"], "thf_sequent": [None, "GENTZEN_ARROW"],
+                          "tff_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "tff_or_formula": [None, "VLINE"],
+                          "tff_and_formula": [None, "AND_CONNECTIVE"], "tff_infix_unary": [None, "INFIX_INEQUALITY"],
+                          "tff_infix_unary": [None, "INFIX_INEQUALITY"], "tff_defined_infix": [None, "DEFINED_INFIX_PRED"],
+                          "tfx_let_defn": [None, "ASSIGNMENT"], "tff_mapping_type": [None, "ARROW"], "tff_xprod_type": [None, "STAR"],
+                          "tff_subtype": [None, "SUBTYPE_SIGN"], "tfx_sequent": [None, "GENTZEN_ARROW"],
+                          "fof_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "fof_or_formula": [None, "VLINE"],
+                          "fof_and_formula": [None, "AND_CONNECTIVE"], "fof_infix_unary": [None, "INFIX_INEQUALITY"],
+                          "fof_defined_infix_formula": [None, "DEFINED_INFIX_PRED"], "fof_sequent": [None, "GENTZEN_ARROW"],
+                          "disjunction": [None, "VLINE"],
                           "thf_apply_formula": [None, "@"], "thf_typed_variable": [None, "："], "thf_atom_typing": [None, "："],
                           "tff_typed_variable": [None, "："], "tff_atom_typing": [None, "："], "general_term": [None, "："],
                           "tpi_annotated": [None, "tpi"], "thf_annotated": [None, "thf"], "tff_annotated": [None, "tff"], "tcf_annotated": [None, "tch"],
                           "fof_annotated": [None, "fof"], "cnf_annotated": [None, "cnf"], "thf_conditional": [None, "$ite"], "thf_let": [None, "$let"],
                           "tfx_conditional": [None, "$ite"], "tfx_let": [None, "$let"], "include": [None, "include"], "tf1_quantified_type": [None, "!>"],
                           "tcf_quantified_formula": [None, "!"],
-                          "thf_quantification": ["THF_QUANTIFIER", "THF_QUANTIFIER"], "thf_prefix_unary": ["UNARY_CONNECTIVE", "UNARY_CONNECTIVE"],
-                          "thf_fof_function": [["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"], ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]],
-                          "tff_prefix_unary": ["UNARY_CONNECTIVE", "UNARY_CONNECTIVE"], "tff_plain_atomic": ["FUNCTOR", "FUNCTOR"],
-                          "tff_defined_plain": ["DEFINED_FUNCTOR", "DEFINED_FUNCTOR"], "tff_system_atomic": ["SYSTEM_FUNCTOR", "SYSTEM_FUNCTOR"],
-                          "tff_atomic_type": ["TYPE_FUNCTOR", "TYPE_FUNCTOR"], "fof_unary_formula": ["UNARY_CONNECTIVE", "UNARY_CONNECTIVE"],
-                          "fof_plain_term": ["FUNCTOR", "FUNCTOR"], "fof_defined_plain_term": ["DEFINED_FUNCTOR", "DEFINED_FUNCTOR"],
-                          "fof_system_term": ["SYSTEM_FUNCTOR", "SYSTEM_FUNCTOR"], "general_function": ["ATOMIC_WORD", "ATOMIC_WORD"],
-                          "literal": ["UNARY_CONNECTIVE", "UNARY_CONNECTIVE"], "tff_quantified_formula": ["FOF_QUANTIFIER", "FOF_QUANTIFIER"],
-                          "fof_quantified_formula": ["FOF_QUANTIFIER", "FOF_QUANTIFIER"],
+                          "thf_quantification": [None, "THF_QUANTIFIER"], "thf_prefix_unary": [None, "UNARY_CONNECTIVE"],
+                          "thf_fof_function": [None, ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]],
+                          "tff_prefix_unary": [None, "UNARY_CONNECTIVE"], "tff_plain_atomic": [None, "FUNCTOR"],
+                          "tff_defined_plain": [None, "DEFINED_FUNCTOR"], "tff_system_atomic": [None, "SYSTEM_FUNCTOR"],
+                          "tff_atomic_type": [None, "TYPE_FUNCTOR"], "fof_unary_formula": [None, "UNARY_CONNECTIVE"],
+                          "fof_plain_term": [None, "FUNCTOR"], "fof_defined_plain_term": [None, "DEFINED_FUNCTOR"],
+                          "fof_system_term": [None, "SYSTEM_FUNCTOR"], "general_function": [None, "ATOMIC_WORD"],
+                          "literal": [None, "UNARY_CONNECTIVE"], "tff_quantified_formula": [None, "FOF_QUANTIFIER"],
+                          "fof_quantified_formula": [None, "FOF_QUANTIFIER"],
                           "formula_data": [["thf_formula", "tff_formula", "fof_formula", "cnf_formula", "fof_term"], ["$thf", "$tff", "$fof", "$cnf", "$fot"]]}
 
 
@@ -146,9 +150,9 @@ class ParseTstp():
         Returns:
             (bool): 残すならTrue、省略するならFalse
         """
-        if cst_parent_data in PARENT_NODE_TO_LEAVE_NODE and \
-                PARENT_NODE_TO_LEAVE_NODE[cst_parent_data] == cst.data or \
-                cst.data in PARENT_NODE_TO_LEAVE_NODE and PARENT_NODE_TO_LEAVE_NODE[cst.data] == None:
+        if cst.data in NODE_MODIFICATION_RULE and (
+                cst_parent_data == NODE_MODIFICATION_RULE[cst.data][0] and NODE_MODIFICATION_RULE[cst.data][1] == None or
+                NODE_MODIFICATION_RULE[cst.data][0] == None and NODE_MODIFICATION_RULE[cst.data][1] == None):
             return True
         else:
             return False
@@ -178,23 +182,30 @@ class ParseTstp():
         if self.__is_leave_node(cst, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             is_add_ast_children = True
-
-        if cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][0]:
+        # ノード名がformula_dataの場合
+        elif cst.data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst.data][0] and NODE_MODIFICATION_RULE[cst.data][1]:
             for i, child in enumerate(cst.children):
-                # トークンを上に上げる場合
-                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data][1]:
-                    token = cst.children.pop(i)
-                    ast.children.append(
-                        Tree(token.value + "," + token.type, []))
-                # ノード名がformula_dataの場合
-                if type(child) == Tree and child.data in NODE_MODIFICATION_RULE[cst.data][0]:
+                if type(child) == Tree and NODE_MODIFICATION_RULE[cst.data][0] and child.data in NODE_MODIFICATION_RULE[cst.data][0]:
                     symbol_index = NODE_MODIFICATION_RULE[cst.data][0].index(
                         child.data)
                     ast.children.append(
                         Tree(NODE_MODIFICATION_RULE[cst.data][1][symbol_index] + "," + cst.data, []))
-            is_add_ast_children = True
+                    is_add_ast_children = True
+                    break
+        # 飛ばす場合(括弧がある場合などの条件を満たさない場合)
+        elif cst.data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst.data][1] == None:
+            pass
+        # トークンを上に上げる場合
+        elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and (NODE_MODIFICATION_RULE[cst.data][1].isupper() or type(NODE_MODIFICATION_RULE[cst.data][1]) == list):
+            for i, child in enumerate(cst.children):
+                if type(child) == Token and NODE_MODIFICATION_RULE[cst.data][1] and child.type in NODE_MODIFICATION_RULE[cst.data][1]:
+                    token = cst.children.pop(i)
+                    ast.children.append(
+                        Tree(token.value + "," + token.type, []))
+                    is_add_ast_children = True
+                    break
         # 記号に書き換える場合
-        elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2:
+        elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1]:
             ast.children.append(
                 Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
             is_add_ast_children = True
