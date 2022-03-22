@@ -1,6 +1,7 @@
 import json
 from graphviz import Digraph
 from lark import Lark, Tree, Token
+import networkx as nx
 
 # 抽象構文木からjsonに変換する際に記号の型を保存するときに使用する
 # key: 記号
@@ -17,27 +18,39 @@ SYMBOL2TYPE = {":=": "assignment", ">": "arrow", "<": "less_sign", "*": "star", 
 # 方針
 # 基本的に子が一つしかなく記号などを含んでいない場合は飛ばす
 # 子が二つ以上あるものは基本的に残す
-# トークンは全て残す
-# 子が二つ以上ある場合の内、ノードA : ノードB "," ノードAのように再帰されているものは飛ばすそれ以外は残す
+# 子が二つ以上ある場合の内、ノードA : ノードB "," ノードAのように再帰が使用されているものは飛ばすそれ以外は残す
 # ノード名 : ノード名 |...| "(" ノード名 ")" or "[" ノード名 "]"が親ノードで子が"(" ノード名 ")" or "[" ノード名 "]"のときの子ノードは残す
 # thf_atom_typing : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
-# ノード名 トークン(+など)or記号(@など) ノード名となっている場合はそのノードをトークン、記号に書き換え、子のトークンを消す
-# 文字列"("ノード名...")" or トークン"("ノード名...")" or トークン ノード名...となっている場合は、文字列、トークンに書き換え、子のトークンを消す
-
+# ノード名 トークン(+など)or記号(@など) ノード名、記号"("ノード名...")"、 トークン"("ノード名...")"、 トークン ノード名...となっている場合はそのノードにトークン、記号の情報を付与する
+# 親ノードにトークン情報が付与されていないトークンは残す
 # tf1_quantified_type : "!>" "[" tff_variable_list "]" ":" tff_monotypeや、
 # tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formulaのように
-# 文字列 or トークン"[" ノード名 "]" ":" ノード名となっている場合は、文字列、トークンに書き換えて、子のトークンを消す
-# この時、"[" ノード名 "]"のノード名は飛ばさないようにする
+# 文字列 or トークン"[" ノード名 "]" ":" ノード名となっている場合は、文字列、トークン情報を付与する
+# この時、"[" ノード名 "]"のノード名()は飛ばさないようにする
 # 理由
 # "[" ノード名 "]"はノードA : ノードB "," ノードAのように再帰されている
 # これを飛ばすとtf1_quantified_type等のノードの子に"[" ノード名 "]"を展開したものと":" ノード名が来る
 # これだと子を見た時、どこまでが"[" ノード名 "]"を展開したものなのか判別不能なため、このような場合のみ"[" ノード名 "]"を残す
 
-# 抽象構文木を作る際に使用するmap
-# key: 現在のノード
-# value: [残す親ノードの条件, 新しいノードの名前]
-# 残す親ノードの条件(str or list or None): 親ノード名と等しいもしくはlistの中のどれかが親ノードならば残す。Noneなら無条件で残す。
-# 新しいノードの名前(str or list or None): 記号もしくはトークンに書き換える。Noneならそのまま。
+# ハードコーディングしている部分
+# 方針に従ってノードを作成する処理
+
+# NODE_MODIFICATION_RULEで実現している部分
+# 方針にしたがってノードを作成する際の場合分け
+#   NODE_MODIFICATION_RULE[key][None, None](常に子が二つ以上ある、括弧が使用されている場合)
+#       無条件でノードを作成
+#   NODE_MODIFICATION_RULE[key][Node_name, None](括弧が使用されているノードの場合)
+#       Node_nameが親ノード名と等しければノードを作成
+#   NODE_MODIFICATION_RULE[key][None, "SINGLE_CHILD" or 記号](子にトークンもしくは記号がある)
+#       唯一存在するトークンの子ノードの情報もしくは記号の情報を付与したノードを作成
+#   NODE_MODIFICATION_RULE[key][Node_name, "SINGLE_CHILD" or 記号]
+#       Node_nameが親ノード名と等しければ、唯一存在するトークンの子ノードの情報もしくは記号の情報を付与したノードを作成
+
+# 具象構文木から抽象構文木を構築するときにノードを作成するルール
+# key: 現在のノード（具象構文木）
+# value: [親ノードの条件、作成するノード名の引継元]
+# 親ノードの条件(str or None): 親ノード名が文字列と等しければノードを作成する．Noneなら無条件で作成する。
+# 作成するノード名の引継元(str or None): 指定された名前の子ノードから名前を引き継ぐ。ただし、子ノードがトークンだった場合は、トークン情報も付与する。ただし"SINGLE_CHILD"であれば、唯一存在する子ノードから名前を引き継ぐ。Noneなら現在のノードの名前を引き継ぐ。
 NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "tff_logic_formula": ["tff_unitary_formula", None],
                           "tff_atom_typing_list": ["tfx_let_types", None], "tfx_let_defn_list": ["tfx_let_defns", None],
                           "tff_logic_formula": ["tff_unitary_term", None], "tff_arguments": ["tfx_tuple", None],
@@ -47,37 +60,38 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "t
                           "tff_variable_list": ["tf1_quantified_type", None], "tff_variable_list": ["tcf_quantified_formula", None],
                           "annotations": [None, None], "thf_quantified_formula": [None, None], "optional_info": [None, None],
                           "thf_tuple": [None, None], "tfx_tuple": [None, None], "tfx_tuple_type": [None, None], "fof_formula_tuple": [None, None],
-                          "formula_selection": [None, None], "general_list": [None, None],
-                          "thf_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "thf_or_formula": [None, "VLINE"],
-                          "thf_and_formula": [None, "AND_CONNECTIVE"], "thf_infix_unary": [None, "INFIX_INEQUALITY"],
-                          "thf_defined_infix": [None, "DEFINED_INFIX_PRED"], "thf_let_defn": [None, "ASSIGNMENT"],
-                          "thf_mapping_type": [None, "ARROW"], "thf_xprod_type": [None, "STAR"], "thf_union_type": [None, "PLUS"],
-                          "thf_subtype": [None, "SUBTYPE_SIGN"], "thf_sequent": [None, "GENTZEN_ARROW"],
-                          "tff_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "tff_or_formula": [None, "VLINE"],
-                          "tff_and_formula": [None, "AND_CONNECTIVE"], "tff_infix_unary": [None, "INFIX_INEQUALITY"],
-                          "tff_infix_unary": [None, "INFIX_INEQUALITY"], "tff_defined_infix": [None, "DEFINED_INFIX_PRED"],
-                          "tfx_let_defn": [None, "ASSIGNMENT"], "tff_mapping_type": [None, "ARROW"], "tff_xprod_type": [None, "STAR"],
-                          "tff_subtype": [None, "SUBTYPE_SIGN"], "tfx_sequent": [None, "GENTZEN_ARROW"],
-                          "fof_binary_nonassoc": [None, "NONASSOC_CONNECTIVE"], "fof_or_formula": [None, "VLINE"],
-                          "fof_and_formula": [None, "AND_CONNECTIVE"], "fof_infix_unary": [None, "INFIX_INEQUALITY"],
-                          "fof_defined_infix_formula": [None, "DEFINED_INFIX_PRED"], "fof_sequent": [None, "GENTZEN_ARROW"],
-                          "disjunction": [None, "VLINE"],
+                          "formula_selection": [None, None], "general_list": [None, None], "thf_subtype": [None, None],
+                          "thf_binary_nonassoc": [None, "SINGLE_CHILD"], "thf_or_formula": [None, "SINGLE_CHILD"],
+                          "thf_and_formula": [None, "SINGLE_CHILD"], "thf_infix_unary": [None, "SINGLE_CHILD"],
+                          "thf_defined_infix": [None, "SINGLE_CHILD"], "thf_let_defn": [None, "SINGLE_CHILD"],
+                          "thf_mapping_type": [None, "SINGLE_CHILD"], "thf_xprod_type": [None, "SINGLE_CHILD"], "thf_union_type": [None, "SINGLE_CHILD"],
+                          "thf_sequent": [None, "SINGLE_CHILD"],
+                          "tff_binary_nonassoc": [None, "SINGLE_CHILD"], "tff_or_formula": [None, "SINGLE_CHILD"],
+                          "tff_and_formula": [None, "SINGLE_CHILD"], "tff_infix_unary": [None, "SINGLE_CHILD"],
+                          "tff_infix_unary": [None, "SINGLE_CHILD"], "tff_defined_infix": [None, "SINGLE_CHILD"],
+                          "tfx_let_defn": [None, "SINGLE_CHILD"], "tff_mapping_type": [None, "SINGLE_CHILD"], "tff_xprod_type": [None, "SINGLE_CHILD"],
+                          "tff_subtype": [None, "SINGLE_CHILD"], "tfx_sequent": [None, "SINGLE_CHILD"],
+                          "fof_binary_nonassoc": [None, "SINGLE_CHILD"], "fof_or_formula": [None, "SINGLE_CHILD"],
+                          "fof_and_formula": [None, "SINGLE_CHILD"], "fof_infix_unary": [None, "SINGLE_CHILD"],
+                          "fof_defined_infix_formula": [None, "SINGLE_CHILD"], "fof_sequent": [None, "SINGLE_CHILD"],
+                          "disjunction": [None, "SINGLE_CHILD"],
                           "thf_apply_formula": [None, "@"], "thf_typed_variable": [None, "："], "thf_atom_typing": [None, "："],
                           "tff_typed_variable": [None, "："], "tff_atom_typing": [None, "："], "general_term": [None, "："],
                           "tpi_annotated": [None, "tpi"], "thf_annotated": [None, "thf"], "tff_annotated": [None, "tff"], "tcf_annotated": [None, "tch"],
                           "fof_annotated": [None, "fof"], "cnf_annotated": [None, "cnf"], "thf_conditional": [None, "$ite"], "thf_let": [None, "$let"],
                           "tfx_conditional": [None, "$ite"], "tfx_let": [None, "$let"], "include": [None, "include"], "tf1_quantified_type": [None, "!>"],
                           "tcf_quantified_formula": [None, "!"],
-                          "thf_quantification": [None, "THF_QUANTIFIER"], "thf_prefix_unary": [None, "UNARY_CONNECTIVE"],
-                          "thf_fof_function": [None, ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]],
-                          "tff_prefix_unary": [None, "UNARY_CONNECTIVE"], "tff_plain_atomic": [None, "FUNCTOR"],
-                          "tff_defined_plain": [None, "DEFINED_FUNCTOR"], "tff_system_atomic": [None, "SYSTEM_FUNCTOR"],
-                          "tff_atomic_type": [None, "TYPE_FUNCTOR"], "fof_unary_formula": [None, "UNARY_CONNECTIVE"],
-                          "fof_plain_term": [None, "FUNCTOR"], "fof_defined_plain_term": [None, "DEFINED_FUNCTOR"],
-                          "fof_system_term": [None, "SYSTEM_FUNCTOR"], "general_function": [None, "ATOMIC_WORD"],
-                          "literal": [None, "UNARY_CONNECTIVE"], "tff_quantified_formula": [None, "FOF_QUANTIFIER"],
-                          "fof_quantified_formula": [None, "FOF_QUANTIFIER"],
-                          "formula_data": [["thf_formula", "tff_formula", "fof_formula", "cnf_formula", "fof_term"], ["$thf", "$tff", "$fof", "$cnf", "$fot"]]}
+                          "thf_quantification": [None, "SINGLE_CHILD"], "thf_prefix_unary": [None, "SINGLE_CHILD"],
+                          "thf_fof_function": [None, "SINGLE_CHILD"],
+                          "tff_prefix_unary": [None, "SINGLE_CHILD"], "tff_plain_atomic": [None, "SINGLE_CHILD"],
+                          "tff_defined_plain": [None, "SINGLE_CHILD"], "tff_system_atomic": [None, "SINGLE_CHILD"],
+                          "tff_atomic_type": [None, "SINGLE_CHILD"], "fof_unary_formula": [None, "SINGLE_CHILD"],
+                          "fof_plain_term": [None, "SINGLE_CHILD"], "fof_defined_plain_term": [None, "SINGLE_CHILD"],
+                          "fof_system_term": [None, "SINGLE_CHILD"], "general_function": [None, "SINGLE_CHILD"],
+                          "literal": [None, "SINGLE_CHILD"], "tff_quantified_formula": [None, "SINGLE_CHILD"],
+                          "fof_quantified_formula": [None, "SINGLE_CHILD"],
+                          "thf_formula": ["formula_data", "$thf"], "tff_formula": ["formula_data", "$tff"], "fof_formula": ["formula_data", "$fof"],
+                          "cnf_formula": ["formula_data", "$cnf"], "fof_term": ["formula_data", "$fot"]}
 
 
 class ParseTstp():
@@ -92,35 +106,36 @@ class ParseTstp():
     def __init__(self, lark_path):
         self.lark_path = lark_path
 
-    def create_edges_tree_graph(self, node, edges, digraph_instance, tag_num):
-        """create_edges_tree_graph
+    def __collect_digraph_data(self, node, node_id, graph_nodes, graph_edges):
+        """__collect_digraph_data
 
-        larkで作成した木のグラフを作る際のエッジを作成する関数
+        グラフを作成するために必要なデータ(エッジ等)を収集する関数
 
         Args:
             node (Tree or Token): 木のノード
-            edges (list): グラフのエッジ
-            digraph_instance (graphviz.graphs.Digraph): digraphのインスタンス
-            tag_num (list): グラフのノードを作る際のタグに使用するための番号
-                            再帰した際でも値が変更されるような参照渡しができるlist型にしている
-                            そのため、要素は一つしかない
+            node_id (int): ノードごとに振られるノードID
+            graph_nodes (list): グラフのノードの集合
+            graph_edges (list): グラフのエッジの集合
         """
-        if type(node) == Tree:
-            parent_tag = tag_num[0]
-            for child in node.children:
-                if type(child) == Tree:
-                    digraph_instance.node(str(tag_num[0]+1), child.data)
-                # トークンの場合
-                else:
-                    digraph_instance.node(
-                        str(tag_num[0]+1), child.value + "," + child.type)
-                edges.append([str(parent_tag), str(tag_num[0]+1)])
-                tag_num[0] += 1
-                self.create_edges_tree_graph(
-                    child, edges, digraph_instance, tag_num)
+        if type(node) != Tree:
+            return
+
+        if not graph_nodes:
+            graph_nodes.append(node.data)
+
+        for child in node.children:
+            if type(child) == Tree:
+                graph_nodes.append(child.data)
+            else:
+                # Token
+                graph_nodes.append(child.value + "," + child.type)
+            child_id = len(graph_nodes) - 1
+            graph_edges.append([str(node_id), str(child_id)])
+            self.__collect_digraph_data(
+                child, child_id, graph_nodes, graph_edges)
 
     def create_tree_graph(self, tree_root, png_path):
-        """create_graph
+        """create_tree_graph
 
         larkで作成した木をグラフ化してpngで保存する関数
 
@@ -128,20 +143,41 @@ class ParseTstp():
             tree_root (Tree): larkで作成した木
             png_path (str): 保存するpngファイルパス
         """
-        edges = list()
+        graph_nodes = []
+        graph_edges = []
         G = Digraph(format="png")
-        tag_num = [1]
-        G.node(str(tag_num[0]), tree_root.data)
-        self.create_edges_tree_graph(tree_root, edges, G, tag_num)
-        for i, j in edges:
-            G.edge(str(i), str(j))
+        self.__collect_digraph_data(tree_root, 0, graph_nodes, graph_edges)
+        for i, node in enumerate(graph_nodes):
+            G.node(str(i), node)
+        for u, v in graph_edges:
+            G.edge(u, v)
         G.render(png_path)
+
+    def create_tree_graph_networkx(self, tree_root, png_path):
+        """create_tree_graph_networkx
+
+        larkで作成した木をnetworkxでグラフ化してpngで保存する関数
+
+        Args:
+            tree_root (Tree): larkで作成した木
+            png_path (str): 保存するpngファイルパス
+        """
+        graph_nodes = []
+        graph_edges = []
+        G = nx.DiGraph()
+        self.__collect_digraph_data(tree_root, 0, graph_nodes, graph_edges)
+        for i, node in enumerate(graph_nodes):
+            G.add_node(str(i), label=node)
+        G.add_edges_from(graph_edges)
+        agraph = nx.nx_agraph.to_agraph(G)
+        agraph.draw(png_path, prog="dot", format="png")
 
     def __is_leave_node(self, cst, cst_parent_data):
         """__is_leave_node
 
         残すノードかどうかを判定する関数
-        ()や[]があるときや子が二つ以上ある場合、再帰されているノードを例外的に残す場合等のノードを残す
+            * どの場合でも子が二つ以上ある、括弧が使用されている場合
+            * 括弧が使用されている場合
 
         Args:
             cst(Tree): 具象構文木のノード
@@ -150,14 +186,11 @@ class ParseTstp():
         Returns:
             (bool): 残すならTrue、省略するならFalse
         """
-        if cst.data in NODE_MODIFICATION_RULE and (
-                cst_parent_data == NODE_MODIFICATION_RULE[cst.data][0] and NODE_MODIFICATION_RULE[cst.data][1] == None or
-                NODE_MODIFICATION_RULE[cst.data][0] == None and NODE_MODIFICATION_RULE[cst.data][1] == None):
-            return True
-        else:
-            return False
+        return cst.data in NODE_MODIFICATION_RULE and (
+            NODE_MODIFICATION_RULE[cst.data][0] == cst_parent_data and NODE_MODIFICATION_RULE[cst.data][1] == None or
+            NODE_MODIFICATION_RULE[cst.data][0] == None and NODE_MODIFICATION_RULE[cst.data][1] == None)
 
-    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), cst_parent_data=None):
+    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), cst_parent_data=None, cst_parent_children_length=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -172,7 +205,9 @@ class ParseTstp():
         """
         # トークンの場合
         if type(cst) != Tree:
-            ast.children.append(cst)
+            # 親ノードでトークン情報を付与したトークンでないなら抽象構文木に加える
+            if not (cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "SINGLE_CHILD" and cst_parent_children_length >= 2):
+                ast.children.append(cst)
             return ast
 
         # astに子が追加されたかどうか
@@ -182,29 +217,21 @@ class ParseTstp():
         if self.__is_leave_node(cst, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             is_add_ast_children = True
-        # ノード名がformula_dataの場合
-        elif cst.data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst.data][0] and NODE_MODIFICATION_RULE[cst.data][1]:
+        # 親ノード名がformula_dataの場合
+        elif cst.data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst.data][0] == cst_parent_data and NODE_MODIFICATION_RULE[cst.data][1]:
+            ast.children.append(
+                Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
+            is_add_ast_children = True
+        # トークン情報を付与する場合
+        elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "SINGLE_CHILD":
             for i, child in enumerate(cst.children):
-                if type(child) == Tree and NODE_MODIFICATION_RULE[cst.data][0] and child.data in NODE_MODIFICATION_RULE[cst.data][0]:
-                    symbol_index = NODE_MODIFICATION_RULE[cst.data][0].index(
-                        child.data)
-                    ast.children.append(
-                        Tree(NODE_MODIFICATION_RULE[cst.data][1][symbol_index] + "," + cst.data, []))
-                    is_add_ast_children = True
-                    break
-        # 飛ばす場合(括弧がある場合などの条件を満たさない場合)
-        elif cst.data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst.data][1] == None:
-            pass
-        # トークンを上に上げる場合
-        elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and (NODE_MODIFICATION_RULE[cst.data][1].isupper() or type(NODE_MODIFICATION_RULE[cst.data][1]) == list):
-            for i, child in enumerate(cst.children):
-                if type(child) == Token and NODE_MODIFICATION_RULE[cst.data][1] and child.type in NODE_MODIFICATION_RULE[cst.data][1]:
-                    token = cst.children.pop(i)
+                if type(child) == Token:
+                    token = cst.children[i]
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
                     is_add_ast_children = True
                     break
-        # 記号に書き換える場合
+        # 記号情報を付与する場合
         elif cst.data in NODE_MODIFICATION_RULE and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1]:
             ast.children.append(
                 Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
@@ -214,10 +241,10 @@ class ParseTstp():
             # astに子が追加されている場合は追加した子にノードを追加していく
             if is_add_ast_children:
                 self.convert_cst2ast(
-                    child, ast.children[-1], cst.data)
+                    child, ast.children[-1], cst.data, len(cst.children))
             else:
                 self.convert_cst2ast(
-                    child, ast, cst.data)
+                    child, ast, cst.data, len(cst.children))
 
         return ast
 
@@ -262,7 +289,7 @@ class ParseTstp():
             json_formula.append(dict_formula)
             return json_formula
 
-        # 抽象構文木を作成する際に中心または左のトークンに書き換えたノードの場合
+        # 抽象構文木を作成する際トークン情報、記号情報を付与したノードの場合
         if "," in node.data:
             node_name, node_type = node.data.split(",")
             dict_formula["symbol"] = node_name
@@ -273,10 +300,7 @@ class ParseTstp():
             else:
                 dict_formula["type"] = node_type
         else:
-            if node.data in SYMBOL2TYPE:
-                dict_formula["type"] = SYMBOL2TYPE[node.data]
-            else:
-                dict_formula["type"] = None
+            dict_formula["type"] = None
             dict_formula["symbol"] = node.data
         dict_formula["children"] = list()
         json_formula.append(dict_formula)
@@ -303,16 +327,16 @@ class ParseTstp():
                 annotation2dict["useful_info"] (list): 上記以外の情報を文字列のリストにして保存している
         """
         annotation2dict = dict()
-        annotation2dict["source"] = node.children[0].data
+        annotation2dict["source"] = node.children[0].data.split(",")[0]
         annotation2dict["useful_info"] = list()
-        if "inference" in annotation2dict["source"]:
+        if annotation2dict["source"] == "inference":
             annotation2dict["inference_parents"] = list()
         for i, child in enumerate(node.children[0].children):
-            if i == 0 and "inference" in annotation2dict["source"]:
+            if i == 0 and annotation2dict["source"] == "inference":
                 annotation2dict["inference_rule"] = child
             elif i == 0 and "file" in annotation2dict["source"]:
                 annotation2dict["file_name"] = child
-            elif "inference" in annotation2dict["source"] and i == 2:
+            elif annotation2dict["source"] == "inference" and i == 2:
                 for grand_child in child.children:
                     annotation2dict["inference_parents"].append(grand_child)
             else:
@@ -431,13 +455,13 @@ class ParseTstp():
         """
         with open(json_path) as f:
             json_root = json.load(f)
-        G = Digraph(format="png")
+        G = nx.DiGraph()
         for formula_info in json_root:
-            for annotation in formula_info["annotations"]:
-                if annotation["source"] == "inference":
-                    for inference_parent in annotation["inference_parents"]:
-                        G.edge(inference_parent, formula_info["name"])
-        G.render(png_path)
+            if "inference" in formula_info["annotations"]["source"]:
+                for inference_parent in formula_info["annotations"]["inference_parents"]:
+                    G.add_edge(inference_parent, formula_info["name"])
+        agraph = nx.nx_agraph.to_agraph(G)
+        agraph.draw(png_path, prog="dot", format="png")
 
     def convert_tstp2json(self, tstp_path, json_path):
         """convert_tstp2json

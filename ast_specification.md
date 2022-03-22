@@ -320,11 +320,6 @@ thf_xprod_type       : thf_unitary_type STAR thf_unitary_type | thf_xprod_type S
 thf_union_type       : thf_unitary_type PLUS thf_unitary_type | thf_union_type PLUS thf_unitary_type
 ```
 
-飛ばすがSUBTYPE_SIGNに書き換える
-``` lark
-thf_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM
-```
-
 飛ばすがGENTZEN_ARROWに書き換える
 ``` lark
 thf_sequent          : thf_tuple GENTZEN_ARROW thf_tuple | "(" thf_sequent ")"
@@ -511,6 +506,7 @@ tfx_tuple_type       : "[" tff_type_list "]"
 fof_formula_tuple    : "{}" | "{" fof_formula_tuple_list "}"
 formula_selection    : "," "[" name_list "]" | null
 general_list         : "[]" | "[" general_terms "]"
+thf_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM
 ```
 
 トークンにする
