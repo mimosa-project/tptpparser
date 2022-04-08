@@ -180,8 +180,8 @@ class ParseTstp():
 
         return cst_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_data][0] == cst_parent_data
 
-    def __is_takeover_source(self, cst_data):
-        """__is_takeover_source
+    def __is_exist_takeover_source(self, cst_data):
+        """__is_exist_takeover_source
 
         NODE_MODIFICATION_RULEの作成するノード名の引継元があるかどうかをboolで返す関数
 
@@ -192,10 +192,10 @@ class ParseTstp():
             (bool): 作成するノード名の引継元があるならTrueそうでないならFalse
         """
 
-        return cst_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_data][1]
+        return (cst_data in NODE_MODIFICATION_RULE) and (NODE_MODIFICATION_RULE[cst_data][1] is not None)
 
-    def __is_leave_token(self, cst_parent_data, cst_parent_children_length):
-        """__is_leave_token
+    def __is_remove_token(self, cst_parent_data, cst_siblings_num):
+        """__is_remove_token
 
         残すトークンかどうかを判定する関数
             * 親のノードでトークン情報を付与していない場合
@@ -204,13 +204,13 @@ class ParseTstp():
 
         Args:
             cst_parent_data (str): 具象構文木の親ノードの名前
-            cst_parent_children_length (int): 具象構文木の親ノードの子の数
+            cst_siblings_num (int): 具象構文木の親ノードの子の数
 
         Returns:
             (bool): 残すならTrue、省略するならFalse
         """
 
-        return not (cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$SINGLE_CHILD" and cst_parent_children_length >= 2)
+        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$SINGLE_CHILD" and cst_siblings_num >= 2
 
     def __is_leave_node(self, cst_data, cst_parent_data):
         """__is_leave_node
@@ -230,12 +230,15 @@ class ParseTstp():
         Returns:
             (bool): 残すならTrue、省略するならFalse
         """
-        return self.__is_parent_node_condition(cst_data, cst_parent_data) and not self.__is_takeover_source(cst_data) or \
-            cst_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[
-                cst_data][0] == None and NODE_MODIFICATION_RULE[cst_data][1] == None
+        is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
+            and NODE_MODIFICATION_RULE[cst_data][0] == None \
+            and NODE_MODIFICATION_RULE[cst_data][1] == None
+        is_enclosed_with_parentheses = self.__is_parent_node_condition(cst_data, cst_parent_data) \
+            and not self.__is_exist_takeover_source(cst_data)
+        return is_leave_unconditional or is_enclosed_with_parentheses
 
-    def __is_add_token_info(self, cst):
-        """__is_add_token_info
+    def __is_inherit_token_info(self, cst):
+        """__is_inherit_token_info
 
         トークン情報を付与するかどうかをboolで返す関数
         具体例
@@ -248,10 +251,10 @@ class ParseTstp():
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
 
-        return self.__is_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$SINGLE_CHILD"
+        return self.__is_exist_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$SINGLE_CHILD"
 
-    def __is_add_symbol_info(self, cst):
-        """__is_add_symbol_info
+    def __is_inherit_symbol_info(self, cst):
+        """__is_inherit_symbol_info
 
         シンボル情報を付与するかどうかをboolで返す関数
         具体例
@@ -264,9 +267,24 @@ class ParseTstp():
             (bool): シンボル情報を付与するならTrueそうでないならFalse
         """
 
-        return self.__is_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$SINGLE_CHILD"
+        return self.__is_exist_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$SINGLE_CHILD"
 
-    def convert_cst2ast(self, cst, ast=Tree("tptp_root", []), cst_parent_data=None, cst_parent_children_length=None):
+    def __is_parent_node_condition_equal_formula_data(self, cst_data, cst_parent_data):
+        """
+
+        親ノードの条件がformula_dataかどうかをboolで返す関数
+            * 親ノードの条件があるかつ、引継ぎ元がある場合は親ノードの条件がformula_dataである場合と等しい
+
+        Args:
+            cst_data(str): 具象構文木のノード名
+            cst_parent_data(str): 具象構文木の親のノード名
+        Returns:
+            (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
+        """
+
+        return self.__is_parent_node_condition(cst_data, cst_parent_data) and self.__is_exist_takeover_source(cst_data)
+
+    def convert_cst2ast(self, cst, ast=None, cst_parent_data=None, cst_siblings_num=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -279,40 +297,39 @@ class ParseTstp():
         Returns:
             ast(Tree): 最終的に作成される抽象構文木
         """
+        if ast is None:
+            ast = Tree("tptp_root", [])
+
         # トークンの場合
         if type(cst) != Tree:
-            if self.__is_leave_token(cst_parent_data, cst_parent_children_length):
+            if not self.__is_remove_token(cst_parent_data, cst_siblings_num):
                 ast.children.append(cst)
             return ast
 
-        is_add_ast_children = False
-
         if self.__is_leave_node(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
-            is_add_ast_children = True
-        elif self.__is_parent_node_condition(cst.data, cst_parent_data) and self.__is_takeover_source(cst.data) or self.__is_add_symbol_info(cst):
+            ast_next = ast.children[-1]
+        elif self.__is_parent_node_condition_equal_formula_data(cst.data, cst_parent_data) or self.__is_inherit_symbol_info(cst):
             # NODE_MODIFICATION_RULEのvalueである、親ノードの条件と作成するノード名の引継元がどちらもあるときは
             # 作成するノード名の引継元が記号の場合しかないため、作成するノード名の引継元が記号の場合の処理と同様になる
             ast.children.append(
                 Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
-            is_add_ast_children = True
-        elif self.__is_add_token_info(cst):
+            ast_next = ast.children[-1]
+        elif self.__is_inherit_token_info(cst):
             for i, child in enumerate(cst.children):
                 if type(child) == Token:
                     token = cst.children[i]
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
-                    is_add_ast_children = True
+                    ast_next = ast.children[-1]
+                    # 子にトークンは一つしか存在しないためbreakする
                     break
-
+        else:
+            ast_next = ast
         for child in cst.children:
             # astに子が追加されている場合は追加した子にノードを追加していく
-            if is_add_ast_children:
-                self.convert_cst2ast(
-                    child, ast.children[-1], cst.data, len(cst.children))
-            else:
-                self.convert_cst2ast(
-                    child, ast, cst.data, len(cst.children))
+            self.convert_cst2ast(
+                child, ast_next, cst.data, len(cst.children))
 
         return ast
 
@@ -410,7 +427,7 @@ class ParseTstp():
         with open(tstp_path, "r") as f:
             tstp = f.read()
         cst_root = self.parse_tstp(tstp)
-        ast_root = self.convert_cst2ast(cst_root, Tree("tptp_root", []))
+        ast_root = self.convert_cst2ast(cst_root)
         graph_nodes = list()
         graph_edges = list()
         self.collect_digraph_data(ast_root, 0, graph_nodes, graph_edges)
