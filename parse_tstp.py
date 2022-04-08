@@ -73,7 +73,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "t
 
 
 class ParseTstp():
-    """Parse_tstp
+    """Parse_Tstp
 
     tstpファイルをjson形式に保存するためのクラス
 
@@ -95,21 +95,16 @@ class ParseTstp():
             graph_nodes (list): グラフのノードの集合
             graph_edges (list): グラフのエッジの集合
         """
-        if type(node) != Tree:
+        if type(node) == Tree:
+            graph_nodes.append(
+                (str(len(graph_nodes)), {"label": node.data}))
+        else:
+            graph_nodes.append(
+                (str(len(graph_nodes)), {"label": node.value + "," + node.type}))
             return
 
-        if not graph_nodes:
-            graph_nodes.append((str(len(graph_nodes)), {"label": node.data}))
-
         for child in node.children:
-            if type(child) == Tree:
-                graph_nodes.append(
-                    (str(len(graph_nodes)), {"label": child.data}))
-            else:
-                # Token
-                graph_nodes.append(
-                    (str(len(graph_nodes)), {"label": child.value + "," + child.type}))
-            child_id = len(graph_nodes) - 1
+            child_id = len(graph_nodes)
             graph_edges.append([str(node_id), str(child_id)])
             self.collect_digraph_data(
                 child, child_id, graph_nodes, graph_edges)
