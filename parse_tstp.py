@@ -204,7 +204,7 @@ class ParseTstp():
 
         Args:
             cst_parent_data (str): 具象構文木の親ノードの名前
-            cst_siblings_num (int): 具象構文木の親ノードの子の数
+            cst_siblings_num (int): 具象構文木の兄弟の数
 
         Returns:
             (bool): 残すならTrue、省略するならFalse
@@ -212,8 +212,8 @@ class ParseTstp():
 
         return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$SINGLE_CHILD" and cst_siblings_num >= 2
 
-    def __is_leave_node(self, cst_data, cst_parent_data):
-        """__is_leave_node
+    def __is_remove_node(self, cst_data, cst_parent_data):
+        """__is_remove_node
 
         残すノードかどうかを判定する関数
             * 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」
@@ -235,7 +235,7 @@ class ParseTstp():
             and NODE_MODIFICATION_RULE[cst_data][1] == None
         is_enclosed_with_parentheses = self.__is_parent_node_condition(cst_data, cst_parent_data) \
             and not self.__is_exist_takeover_source(cst_data)
-        return is_leave_unconditional or is_enclosed_with_parentheses
+        return not is_leave_unconditional and not is_enclosed_with_parentheses
 
     def __is_inherit_token_info(self, cst):
         """__is_inherit_token_info
@@ -292,7 +292,8 @@ class ParseTstp():
         Args:
             cst(Tree or Token): 具象構文木のノード
             ast(Tree): 抽象構文木のノード
-            cst_parent_data(str): 抽象構文木の親のノード名
+            cst_parent_data(str): 具象構文木の親のノード名
+            cst_siblings_num(int): 具象構文木の兄弟の数
 
         Returns:
             ast(Tree): 最終的に作成される抽象構文木
@@ -306,7 +307,7 @@ class ParseTstp():
                 ast.children.append(cst)
             return ast
 
-        if self.__is_leave_node(cst.data, cst_parent_data):
+        if not self.__is_remove_node(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
         elif self.__is_parent_node_condition_equal_formula_data(cst.data, cst_parent_data) or self.__is_inherit_symbol_info(cst):
@@ -326,10 +327,9 @@ class ParseTstp():
                     break
         else:
             ast_next = ast
+
         for child in cst.children:
-            # astに子が追加されている場合は追加した子にノードを追加していく
-            self.convert_cst2ast(
-                child, ast_next, cst.data, len(cst.children))
+            self.convert_cst2ast(child, ast_next, cst.data, len(cst.children))
 
         return ast
 
@@ -377,7 +377,7 @@ class ParseTstp():
         return "," in node_data and node_data.split(",")[1] == "ATOMIC_WORD" and node_data.split(",")[0][0].isalpha() and node_data.split(",")[0][1:].isdigit()
 
     def create_deduction_tree_graph_on_networkx(self, json_path):
-        """create_proof_graph_on_networkx
+        """create_deduction_tree_graph_on_networkx
 
         抽象構文木をjson形式で保存されたものから証明のグラフを作成する関数
 
