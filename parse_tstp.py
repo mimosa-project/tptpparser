@@ -376,15 +376,27 @@ class ParseTstp():
 
         return "," in node_data and node_data.split(",")[1] == "ATOMIC_WORD" and node_data.split(",")[0][0].isalpha() and node_data.split(",")[0][1:].isdigit()
 
-    def create_proof_graph_on_networkx(self, json_path):
+    def create_deduction_tree_graph_on_networkx(self, json_path):
         """create_proof_graph_on_networkx
 
         抽象構文木をjson形式で保存されたものから証明のグラフを作成する関数
+
+        グラフを作成する流れ
+            1. 導出された式のラベルのnode_idをkey、導出された式のラベルをvalueとしたmapを作成する
+            2. 参照された式のラベルのnode_idをkey、参照された式のラベルをvalueとしたmapを作成する
+            3. 導出された式のラベルのnode_idのlistを作成する
+            4. 参照された式のラベルのnode_idのlistを作成する
+            5. 参照された式のラベルのnode_idのlistをfor文で回し、参照された式のラベルのnode_idが
+               導出された式のラベルのnode_idのlistのどこの間にあるかを2文探索で求め、
+               エッジに[参照された式のラベル、導出された式のラベル]を加える
+            6. エッジを追加したnetworkxのインスタンスを作成し、返す
 
         Args:
             json_path (str): tstpファイルをparseした結果のjsonファイルのパス
                 * jsonのフォーマットはnetworkx
             png_path (str): 保存するpngファイルのバス
+        Returns:
+            G(networkx.classes.digraph.DiGraph): エッジを追加したnetworkxのインスタンス
         """
         with open(json_path) as f:
             json_root = json.load(f)
