@@ -3,7 +3,6 @@ from graphviz import Digraph
 from lark import Lark, Tree, Token
 import networkx as nx
 from networkx.readwrite import json_graph
-from bisect import bisect
 
 
 # 方針
@@ -145,6 +144,7 @@ class ParseTstp():
         Args:
             graph_nodes (list): グラフに追加するノードのリスト
             graph_edges (list): グラフに追加するエッジのリスト
+
         Returns:
             G(networkx.classes.digraph.DiGraph): ノードとエッジを追加したnetworkxのインスタンス
         """
@@ -177,7 +177,6 @@ class ParseTstp():
         Returns:
             (bool): 親ノードの条件を満たしているならTrueそうでないならFalse
         """
-
         return cst_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_data][0] == cst_parent_data
 
     def __satisfy_name_inherit_condition(self, cst_data):
@@ -197,9 +196,9 @@ class ParseTstp():
     def __satisfy_token_remove_condition(self, cst_parent_data, cst_siblings_num):
         """__satisfy_token_remove_condition
 
-        残すトークンかどうかを判定する関数
-            * 親のノードでトークン情報を付与していない場合
-                具体例(親のノードでトークン情報を付与している場合の例)
+        削除するトークンかどうかを判定する関数
+            * 親のノードでトークン情報を付与している場合
+                具体例
                     thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
 
         Args:
@@ -207,28 +206,29 @@ class ParseTstp():
             cst_siblings_num (int): 具象構文木の兄弟の数
 
         Returns:
-            (bool): 残すならTrue、省略するならFalse
+            (bool): 削除するならTrue、そうでないならFalse
         """
-
         return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$REMOVE_CHILD_TOKEN" and cst_siblings_num >= 2
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
         """__satisfy_node_remove_condition
 
-        残すノードかどうかを判定する関数
-            * 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」
-                具体例
-                    thf_quantified_formula : thf_quantification thf_unit_formula
-                    thf_tuple            : "[]" | "[" thf_formula_list "]"
-            * ある文法導出に対して「括弧で括られている」
-                具体例
-                    tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
+        削除するノードかどうかを判定する関数
+            以下のいずれでもない場合
+                * 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」
+                    具体例
+                        thf_quantified_formula : thf_quantification thf_unit_formula
+                        thf_tuple            : "[]" | "[" thf_formula_list "]"
+                * ある文法導出に対して「括弧で括られている」
+                    具体例
+                        tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
+
         Args:
             cst_data(str): 具象構文木のノード名
             cst_parent_data(str): 具象構文木の親のノード名
 
         Returns:
-            (bool): 残すならTrue、省略するならFalse
+            (bool): 削除するならTrue、そうでないならFalse
         """
         is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
             and NODE_MODIFICATION_RULE[cst_data][0] == None \
@@ -250,7 +250,6 @@ class ParseTstp():
         Returns:
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
-
         return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$REMOVE_CHILD_TOKEN"
 
     def __is_inherit_symbol_info(self, cst):
@@ -266,22 +265,23 @@ class ParseTstp():
         Returns:
             (bool): シンボル情報を付与するならTrueそうでないならFalse
         """
-
         return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$REMOVE_CHILD_TOKEN"
 
     def __has_formula_parent(self, cst_data, cst_parent_data):
         """__has_formula_parent
 
         親ノードの条件がformula_dataかどうかをboolで返す関数
-            * 親ノードの条件があるかつ、引継ぎ元がある場合は親ノードの条件がformula_dataである場合と等しい
+            * 親ノードの条件があるかつ、引継ぎ元がある場合は親ノードの条件がformula_dataである場合しかない
+              そのため、式に意味はない
 
         Args:
             cst_data(str): 具象構文木のノード名
             cst_parent_data(str): 具象構文木の親のノード名
+
         Returns:
             (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
         """
-
+        # この式に意味はない
         return self.__satisfy_parent_condition(cst_data, cst_parent_data) and self.__satisfy_name_inherit_condition(cst_data)
 
     def convert_cst2ast(self, cst, ast=None, cst_parent_data=None, cst_siblings_num=None):
@@ -317,9 +317,9 @@ class ParseTstp():
                 Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
             ast_next = ast.children[-1]
         elif self.__is_inherit_token_info(cst):
-            for i, child in enumerate(cst.children):
+            for child in cst.children:
                 if type(child) == Token:
-                    token = cst.children[i]
+                    token = child
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
                     ast_next = ast.children[-1]
@@ -350,79 +350,72 @@ class ParseTstp():
 
         return cst_root
 
-    def __is_resolvent_formula_label(self, node_data):
-        """__is_resolvent_formula_label
+    def __get_formula_label(self, ast_top):
+        """__get_formula_label
 
-        導出された式のラベル名かどうかをboolで返す関数
-
-        Args:
-            node_data(str): ノードのラベル
-        Returns:
-            (bool): 導出された式のラベル名ならTrueそうでないならFalse
-        """
-
-        return "," in node_data and node_data.split(",")[1] == "NAME"
-
-    def __is_assumption_formula_label(self, node_data):
-        """__is_assumption_formula_label
-
-        参照した式のラベルかどうかをboolで返す関数
+        抽象構文木から導出された式のラベルを返す関数
 
         Args:
-            node_data(str): ノードのラベル
+            ast_top (Tree): 抽象構文木の根の子
+
         Returns:
-            (bool): 参照した式のラベル名ならTrueそうでないならFalse
+            formula_label (str): 導出された式のラベル
         """
+        formula_label = ast_top.children[0].value
+        return formula_label
 
-        return "," in node_data and node_data.split(",")[1] == "ATOMIC_WORD" and node_data.split(",")[0][0].isalpha() and node_data.split(",")[0][1:].isdigit()
+    def __is_inference(self, annotations):
+        """__is_inference
 
-    def create_deduction_tree_graph_on_networkx(self, json_path):
+        annotationsの子にinferenceがあるかどうかをboolで返す関数
+
+        Args:
+            annotations (Tree): 抽象構文木のannotations部分のTree
+
+        Returns:
+            (bool): annotationsの子にinferenceがあるならTrue、そうでないならFalse
+        """
+        return annotations and "inference" in annotations[0].data
+
+    def __get_assumption_formula_labels(self, ast_top):
+        """__get_assumption_formula_labels
+
+        参照した式のラベルを返す関数
+
+        Args:
+            ast_top (Tree): 抽象構文木の根の子
+
+        Returns:
+            assumption_formula_labels (list): 参照した式のラベルのリスト
+        """
+        assumption_formula_labels = list()
+        annotations = ast_top.children[-1].children
+        if not self.__is_inference(annotations):
+            return assumption_formula_labels
+        inference_parents = annotations[0].children[-1].children
+        for inference_parent in inference_parents:
+            assumption_formula_label = inference_parent.value
+            assumption_formula_labels.append(assumption_formula_label)
+        return assumption_formula_labels
+
+    def create_deduction_tree_graph_on_networkx(self, ast_root):
         """create_deduction_tree_graph_on_networkx
 
-        抽象構文木をjson形式で保存されたものから証明のグラフを作成する関数
-
-        グラフを作成する流れ
-            1. 導出された式のラベルのnode_idをkey、導出された式のラベルをvalueとしたmapを作成する
-            2. 参照された式のラベルのnode_idをkey、参照された式のラベルをvalueとしたmapを作成する
-            3. 導出された式のラベルのnode_idのlistを作成する
-            4. 参照された式のラベルのnode_idのlistを作成する
-            5. 参照された式のラベルのnode_idのlistをfor文で回し、参照された式のラベルのnode_idが
-               導出された式のラベルのnode_idのlistのどこの間にあるかを2文探索で求め、
-               エッジに[参照された式のラベル、導出された式のラベル]を加える
-            6. エッジを追加したnetworkxのインスタンスを作成し、返す
+        抽象構文木から証明のグラフを作成する関数
 
         Args:
-            json_path (str): tstpファイルをparseした結果のjsonファイルのパス
-                * jsonのフォーマットはnetworkx
-            png_path (str): 保存するpngファイルのバス
+            ast_root (Tree): 抽象構文木の根
+
         Returns:
             G(networkx.classes.digraph.DiGraph): エッジを追加したnetworkxのインスタンス
         """
-        with open(json_path) as f:
-            json_root = json.load(f)
-        resolvent_node_id2formula_label = dict()
-        assumption_node_id2formula_label = dict()
-        for node in json_root["nodes"]:
-            if self.__is_resolvent_formula_label(node["label"]):
-                formula_label = node["label"].split(",")[0]
-                resolvent_node_id2formula_label[node["id"]] = formula_label
-            if self.__is_assumption_formula_label(node["label"]):
-                formula_label = node["label"].split(",")[0]
-                assumption_node_id2formula_label[node["id"]] = formula_label
         graph_edges = list()
-        resolvent_node_id_list = [int(resolvent_node_id2formula_label_key)
-                                  for resolvent_node_id2formula_label_key in resolvent_node_id2formula_label.keys()]
-        assumption_node_id_list = [int(assumption_formula_label_key)
-                                   for assumption_formula_label_key in assumption_node_id2formula_label.keys()]
-        for assumption_node_id in assumption_node_id_list:
-            resolvent_node_id_index = bisect(
-                resolvent_node_id_list, assumption_node_id) - 1
-            resolvent_formula_label = resolvent_node_id2formula_label[str(
-                resolvent_node_id_list[resolvent_node_id_index])]
-            assumption_formula_label = assumption_node_id2formula_label[str(
-                assumption_node_id)]
-            graph_edges.append(
-                [assumption_formula_label, resolvent_formula_label])
+        for child in ast_root.children:
+            formula_label = self.__get_formula_label(child)
+            assumption_formula_labels = self.__get_assumption_formula_labels(
+                child)
+            for assumption_formula_label in assumption_formula_labels:
+                graph_edges.append([assumption_formula_label, formula_label])
         G = nx.DiGraph()
         G.add_edges_from(graph_edges)
         return G
