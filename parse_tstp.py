@@ -28,7 +28,7 @@ from bisect import bisect
 # value: [親ノードの条件、作成するノード名の引継元]
 # 親ノードの条件(str or None): 親ノード名が文字列と等しければノードを作成する．Noneなら無条件で作成する。
 # 作成するノード名の引継元(str or None): 指定された名前の子ノードから名前を引き継ぐ。
-# ただし、子ノードがトークンだった場合は、トークン情報も付与する。"$SINGLE_CHILD"であれば、唯一存在する子ノードから名前を引き継ぐ。Noneなら現在のノードの名前を引き継ぐ。
+# ただし、子ノードがトークンだった場合は、トークン情報も付与する。"$REMOVE_CHILD_TOKEN"であれば、唯一存在する子ノードから名前を引き継ぐ。Noneなら現在のノードの名前を引き継ぐ。
 NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "tff_logic_formula": ["tff_unitary_formula", None],
                           "tff_atom_typing_list": ["tfx_let_types", None], "tfx_let_defn_list": ["tfx_let_defns", None],
                           "tff_logic_formula": ["tff_unitary_term", None], "tff_arguments": ["tfx_tuple", None],
@@ -39,35 +39,35 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": ["thf_unitary_formula", None], "t
                           "annotations": [None, None], "thf_quantified_formula": [None, None], "optional_info": [None, None],
                           "thf_tuple": [None, None], "tfx_tuple": [None, None], "tfx_tuple_type": [None, None], "fof_formula_tuple": [None, None],
                           "formula_selection": [None, None], "general_list": [None, None], "thf_subtype": [None, None],
-                          "thf_binary_nonassoc": [None, "$SINGLE_CHILD"], "thf_or_formula": [None, "$SINGLE_CHILD"],
-                          "thf_and_formula": [None, "$SINGLE_CHILD"], "thf_infix_unary": [None, "$SINGLE_CHILD"],
-                          "thf_defined_infix": [None, "$SINGLE_CHILD"], "thf_let_defn": [None, "$SINGLE_CHILD"],
-                          "thf_mapping_type": [None, "$SINGLE_CHILD"], "thf_xprod_type": [None, "$SINGLE_CHILD"], "thf_union_type": [None, "$SINGLE_CHILD"],
-                          "thf_sequent": [None, "$SINGLE_CHILD"],
-                          "tff_binary_nonassoc": [None, "$SINGLE_CHILD"], "tff_or_formula": [None, "$SINGLE_CHILD"],
-                          "tff_and_formula": [None, "$SINGLE_CHILD"], "tff_infix_unary": [None, "$SINGLE_CHILD"],
-                          "tff_infix_unary": [None, "$SINGLE_CHILD"], "tff_defined_infix": [None, "$SINGLE_CHILD"],
-                          "tfx_let_defn": [None, "$SINGLE_CHILD"], "tff_mapping_type": [None, "$SINGLE_CHILD"], "tff_xprod_type": [None, "$SINGLE_CHILD"],
-                          "tff_subtype": [None, "$SINGLE_CHILD"], "tfx_sequent": [None, "$SINGLE_CHILD"],
-                          "fof_binary_nonassoc": [None, "$SINGLE_CHILD"], "fof_or_formula": [None, "$SINGLE_CHILD"],
-                          "fof_and_formula": [None, "$SINGLE_CHILD"], "fof_infix_unary": [None, "$SINGLE_CHILD"],
-                          "fof_defined_infix_formula": [None, "$SINGLE_CHILD"], "fof_sequent": [None, "$SINGLE_CHILD"],
-                          "disjunction": [None, "$SINGLE_CHILD"],
+                          "thf_binary_nonassoc": [None, "$REMOVE_CHILD_TOKEN"], "thf_or_formula": [None, "$REMOVE_CHILD_TOKEN"],
+                          "thf_and_formula": [None, "$REMOVE_CHILD_TOKEN"], "thf_infix_unary": [None, "$REMOVE_CHILD_TOKEN"],
+                          "thf_defined_infix": [None, "$REMOVE_CHILD_TOKEN"], "thf_let_defn": [None, "$REMOVE_CHILD_TOKEN"],
+                          "thf_mapping_type": [None, "$REMOVE_CHILD_TOKEN"], "thf_xprod_type": [None, "$REMOVE_CHILD_TOKEN"], "thf_union_type": [None, "$REMOVE_CHILD_TOKEN"],
+                          "thf_sequent": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_binary_nonassoc": [None, "$REMOVE_CHILD_TOKEN"], "tff_or_formula": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_and_formula": [None, "$REMOVE_CHILD_TOKEN"], "tff_infix_unary": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_infix_unary": [None, "$REMOVE_CHILD_TOKEN"], "tff_defined_infix": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tfx_let_defn": [None, "$REMOVE_CHILD_TOKEN"], "tff_mapping_type": [None, "$REMOVE_CHILD_TOKEN"], "tff_xprod_type": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_subtype": [None, "$REMOVE_CHILD_TOKEN"], "tfx_sequent": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_binary_nonassoc": [None, "$REMOVE_CHILD_TOKEN"], "fof_or_formula": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_and_formula": [None, "$REMOVE_CHILD_TOKEN"], "fof_infix_unary": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_defined_infix_formula": [None, "$REMOVE_CHILD_TOKEN"], "fof_sequent": [None, "$REMOVE_CHILD_TOKEN"],
+                          "disjunction": [None, "$REMOVE_CHILD_TOKEN"],
                           "thf_apply_formula": [None, "@"], "thf_typed_variable": [None, "："], "thf_atom_typing": [None, "："],
                           "tff_typed_variable": [None, "："], "tff_atom_typing": [None, "："], "general_term": [None, "："],
                           "tpi_annotated": [None, "tpi"], "thf_annotated": [None, "thf"], "tff_annotated": [None, "tff"], "tcf_annotated": [None, "tch"],
                           "fof_annotated": [None, "fof"], "cnf_annotated": [None, "cnf"], "thf_conditional": [None, "$ite"], "thf_let": [None, "$let"],
                           "tfx_conditional": [None, "$ite"], "tfx_let": [None, "$let"], "include": [None, "include"], "tf1_quantified_type": [None, "!>"],
                           "tcf_quantified_formula": [None, "!"],
-                          "thf_quantification": [None, "$SINGLE_CHILD"], "thf_prefix_unary": [None, "$SINGLE_CHILD"],
-                          "thf_fof_function": [None, "$SINGLE_CHILD"],
-                          "tff_prefix_unary": [None, "$SINGLE_CHILD"], "tff_plain_atomic": [None, "$SINGLE_CHILD"],
-                          "tff_defined_plain": [None, "$SINGLE_CHILD"], "tff_system_atomic": [None, "$SINGLE_CHILD"],
-                          "tff_atomic_type": [None, "$SINGLE_CHILD"], "fof_unary_formula": [None, "$SINGLE_CHILD"],
-                          "fof_plain_term": [None, "$SINGLE_CHILD"], "fof_defined_plain_term": [None, "$SINGLE_CHILD"],
-                          "fof_system_term": [None, "$SINGLE_CHILD"], "general_function": [None, "$SINGLE_CHILD"],
-                          "literal": [None, "$SINGLE_CHILD"], "tff_quantified_formula": [None, "$SINGLE_CHILD"],
-                          "fof_quantified_formula": [None, "$SINGLE_CHILD"],
+                          "thf_quantification": [None, "$REMOVE_CHILD_TOKEN"], "thf_prefix_unary": [None, "$REMOVE_CHILD_TOKEN"],
+                          "thf_fof_function": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_prefix_unary": [None, "$REMOVE_CHILD_TOKEN"], "tff_plain_atomic": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_defined_plain": [None, "$REMOVE_CHILD_TOKEN"], "tff_system_atomic": [None, "$REMOVE_CHILD_TOKEN"],
+                          "tff_atomic_type": [None, "$REMOVE_CHILD_TOKEN"], "fof_unary_formula": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_plain_term": [None, "$REMOVE_CHILD_TOKEN"], "fof_defined_plain_term": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_system_term": [None, "$REMOVE_CHILD_TOKEN"], "general_function": [None, "$REMOVE_CHILD_TOKEN"],
+                          "literal": [None, "$REMOVE_CHILD_TOKEN"], "tff_quantified_formula": [None, "$REMOVE_CHILD_TOKEN"],
+                          "fof_quantified_formula": [None, "$REMOVE_CHILD_TOKEN"],
                           "thf_formula": ["formula_data", "$thf"], "tff_formula": ["formula_data", "$tff"], "fof_formula": ["formula_data", "$fof"],
                           "cnf_formula": ["formula_data", "$cnf"], "fof_term": ["formula_data", "$fot"]}
 
@@ -165,8 +165,8 @@ class ParseTstp():
         agraph = nx.nx_agraph.to_agraph(G)
         agraph.draw(path, prog="dot", format="png")
 
-    def __is_parent_node_condition(self, cst_data, cst_parent_data):
-        """__is_parent_node_condition
+    def __satisfy_parent_condition(self, cst_data, cst_parent_data):
+        """__satisfy_parent_condition
 
         NODE_MODIFICATION_RULEの親ノードの条件を満たしているかどうかをboolで返す関数
 
@@ -180,8 +180,8 @@ class ParseTstp():
 
         return cst_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_data][0] == cst_parent_data
 
-    def __is_exist_takeover_source(self, cst_data):
-        """__is_exist_takeover_source
+    def __satisfy_name_inherit_condition(self, cst_data):
+        """__satisfy_name_inherit_condition
 
         NODE_MODIFICATION_RULEの作成するノード名の引継元があるかどうかをboolで返す関数
 
@@ -194,8 +194,8 @@ class ParseTstp():
 
         return (cst_data in NODE_MODIFICATION_RULE) and (NODE_MODIFICATION_RULE[cst_data][1] is not None)
 
-    def __is_remove_token(self, cst_parent_data, cst_siblings_num):
-        """__is_remove_token
+    def __satisfy_token_remove_condition(self, cst_parent_data, cst_siblings_num):
+        """__satisfy_token_remove_condition
 
         残すトークンかどうかを判定する関数
             * 親のノードでトークン情報を付与していない場合
@@ -210,10 +210,10 @@ class ParseTstp():
             (bool): 残すならTrue、省略するならFalse
         """
 
-        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$SINGLE_CHILD" and cst_siblings_num >= 2
+        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$REMOVE_CHILD_TOKEN" and cst_siblings_num >= 2
 
-    def __is_remove_node(self, cst_data, cst_parent_data):
-        """__is_remove_node
+    def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
+        """__satisfy_node_remove_condition
 
         残すノードかどうかを判定する関数
             * 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」
@@ -233,8 +233,8 @@ class ParseTstp():
         is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
             and NODE_MODIFICATION_RULE[cst_data][0] == None \
             and NODE_MODIFICATION_RULE[cst_data][1] == None
-        is_enclosed_with_parentheses = self.__is_parent_node_condition(cst_data, cst_parent_data) \
-            and not self.__is_exist_takeover_source(cst_data)
+        is_enclosed_with_parentheses = self.__satisfy_parent_condition(cst_data, cst_parent_data) \
+            and not self.__satisfy_name_inherit_condition(cst_data)
         return not is_leave_unconditional and not is_enclosed_with_parentheses
 
     def __is_inherit_token_info(self, cst):
@@ -251,7 +251,7 @@ class ParseTstp():
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
 
-        return self.__is_exist_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$SINGLE_CHILD"
+        return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$REMOVE_CHILD_TOKEN"
 
     def __is_inherit_symbol_info(self, cst):
         """__is_inherit_symbol_info
@@ -267,10 +267,10 @@ class ParseTstp():
             (bool): シンボル情報を付与するならTrueそうでないならFalse
         """
 
-        return self.__is_exist_takeover_source(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$SINGLE_CHILD"
+        return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$REMOVE_CHILD_TOKEN"
 
-    def __is_parent_node_condition_equal_formula_data(self, cst_data, cst_parent_data):
-        """
+    def __has_formula_parent(self, cst_data, cst_parent_data):
+        """__has_formula_parent
 
         親ノードの条件がformula_dataかどうかをboolで返す関数
             * 親ノードの条件があるかつ、引継ぎ元がある場合は親ノードの条件がformula_dataである場合と等しい
@@ -282,7 +282,7 @@ class ParseTstp():
             (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
         """
 
-        return self.__is_parent_node_condition(cst_data, cst_parent_data) and self.__is_exist_takeover_source(cst_data)
+        return self.__satisfy_parent_condition(cst_data, cst_parent_data) and self.__satisfy_name_inherit_condition(cst_data)
 
     def convert_cst2ast(self, cst, ast=None, cst_parent_data=None, cst_siblings_num=None):
         """convert_cst2ast
@@ -303,14 +303,14 @@ class ParseTstp():
 
         # トークンの場合
         if type(cst) != Tree:
-            if not self.__is_remove_token(cst_parent_data, cst_siblings_num):
+            if not self.__satisfy_token_remove_condition(cst_parent_data, cst_siblings_num):
                 ast.children.append(cst)
             return ast
 
-        if not self.__is_remove_node(cst.data, cst_parent_data):
+        if not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
-        elif self.__is_parent_node_condition_equal_formula_data(cst.data, cst_parent_data) or self.__is_inherit_symbol_info(cst):
+        elif self.__has_formula_parent(cst.data, cst_parent_data) or self.__is_inherit_symbol_info(cst):
             # NODE_MODIFICATION_RULEのvalueである、親ノードの条件と作成するノード名の引継元がどちらもあるときは
             # 作成するノード名の引継元が記号の場合しかないため、作成するノード名の引継元が記号の場合の処理と同様になる
             ast.children.append(
@@ -350,8 +350,8 @@ class ParseTstp():
 
         return cst_root
 
-    def __is_resolved_formula_label(self, node_data):
-        """__is_resolved_formula_label
+    def __is_resolvent_formula_label(self, node_data):
+        """__is_resolvent_formula_label
 
         導出された式のラベル名かどうかをboolで返す関数
 
@@ -363,8 +363,8 @@ class ParseTstp():
 
         return "," in node_data and node_data.split(",")[1] == "NAME"
 
-    def __is_referenced_formula_label(self, node_data):
-        """__is_referenced_formula_label
+    def __is_assumption_formula_label(self, node_data):
+        """__is_assumption_formula_label
 
         参照した式のラベルかどうかをboolで返す関数
 
@@ -400,29 +400,29 @@ class ParseTstp():
         """
         with open(json_path) as f:
             json_root = json.load(f)
-        resolved_node_id2formula_label = dict()
-        referenced_node_id2formula_label = dict()
+        resolvent_node_id2formula_label = dict()
+        assumption_node_id2formula_label = dict()
         for node in json_root["nodes"]:
-            if self.__is_resolved_formula_label(node["label"]):
+            if self.__is_resolvent_formula_label(node["label"]):
                 formula_label = node["label"].split(",")[0]
-                resolved_node_id2formula_label[node["id"]] = formula_label
-            if self.__is_referenced_formula_label(node["label"]):
+                resolvent_node_id2formula_label[node["id"]] = formula_label
+            if self.__is_assumption_formula_label(node["label"]):
                 formula_label = node["label"].split(",")[0]
-                referenced_node_id2formula_label[node["id"]] = formula_label
+                assumption_node_id2formula_label[node["id"]] = formula_label
         graph_edges = list()
-        resolved_node_id_list = [int(resolved_node_id2formula_label_key)
-                                 for resolved_node_id2formula_label_key in resolved_node_id2formula_label.keys()]
-        referenced_node_id_list = [int(referenced_formula_label_key)
-                                   for referenced_formula_label_key in referenced_node_id2formula_label.keys()]
-        for referenced_node_id in referenced_node_id_list:
-            resolved_node_id_index = bisect(
-                resolved_node_id_list, referenced_node_id) - 1
-            referenced_formula_label = referenced_node_id2formula_label[str(
-                referenced_node_id)]
-            resolved_formula_label = resolved_node_id2formula_label[str(
-                resolved_node_id_list[resolved_node_id_index])]
+        resolvent_node_id_list = [int(resolvent_node_id2formula_label_key)
+                                  for resolvent_node_id2formula_label_key in resolvent_node_id2formula_label.keys()]
+        assumption_node_id_list = [int(assumption_formula_label_key)
+                                   for assumption_formula_label_key in assumption_node_id2formula_label.keys()]
+        for assumption_node_id in assumption_node_id_list:
+            resolvent_node_id_index = bisect(
+                resolvent_node_id_list, assumption_node_id) - 1
+            resolvent_formula_label = resolvent_node_id2formula_label[str(
+                resolvent_node_id_list[resolvent_node_id_index])]
+            assumption_formula_label = assumption_node_id2formula_label[str(
+                assumption_node_id)]
             graph_edges.append(
-                [referenced_formula_label, resolved_formula_label])
+                [assumption_formula_label, resolvent_formula_label])
         G = nx.DiGraph()
         G.add_edges_from(graph_edges)
         return G
