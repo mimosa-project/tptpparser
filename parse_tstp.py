@@ -307,6 +307,7 @@ class ParseTstp():
                 ast.children.append(cst)
             return ast
 
+        # これ以降は内部ノード
         if not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
