@@ -6,19 +6,19 @@ tptp_input           : annotated_formula | include
 
 annotated_formula    : thf_annotated | tff_annotated | tcf_annotated | fof_annotated | cnf_annotated | tpi_annotated
 
-tpi_annotated        : "tpi" "(" NAME "," FORMULA_ROLE "," tpi_formula annotations ")" "."
+tpi_annotated        : TPI LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA tpi_formula annotations RIGHT_PARENTHESES PERIOD
 tpi_formula          : fof_formula
-thf_annotated        : "thf" "(" NAME "," FORMULA_ROLE "," thf_formula annotations ")" "."
-tff_annotated        : "tff" "(" NAME "," FORMULA_ROLE "," tff_formula annotations ")" "."
-tcf_annotated        : "tcf" "(" NAME "," FORMULA_ROLE "," tcf_formula annotations ")" "."
-fof_annotated        : "fof" "(" NAME "," FORMULA_ROLE "," fof_formula annotations ")" "."
-cnf_annotated        : "cnf" "(" NAME "," FORMULA_ROLE "," cnf_formula annotations ")" "."
-annotations          :  "," source optional_info | null
+thf_annotated        : THF LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA thf_formula annotations RIGHT_PARENTHESES PERIOD
+tff_annotated        : TFF LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA tff_formula annotations RIGHT_PARENTHESES PERIOD
+tcf_annotated        : TCF LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA tcf_formula annotations RIGHT_PARENTHESES PERIOD
+fof_annotated        : FOF LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA fof_formula annotations RIGHT_PARENTHESES PERIOD
+cnf_annotated        : CNF LEFT_PARENTHESES NAME COMMA FORMULA_ROLE COMMA cnf_formula annotations RIGHT_PARENTHESES PERIOD
+annotations          :  COMMA source optional_info | null
 
 FORMULA_ROLE         : LOWER_WORD
 //FORMULA_ROLE         : axiom | hypothesis | definition | assumption | lemma | theorem | corollary | conjecture |  negated_conjecture | plain | type | fi_domain | fi_functors | fi_predicates | unknown
 
-thf_formula          : thf_logic_formula | thf_atom_typing | thf_subtype | thf_sequent | LOWER_WORD ":" thf_quantified_formula//LOWER_WORD ":" thf_quantified_formula追加
+thf_formula          : thf_logic_formula | thf_atom_typing | thf_subtype | thf_sequent | LOWER_WORD COLON thf_quantified_formula//LOWER_WORD ":" thf_quantified_formula追加
 thf_logic_formula    : thf_unitary_formula | thf_unary_formula | thf_binary_formula | thf_defined_infix
 thf_binary_formula   : thf_binary_nonassoc | thf_binary_assoc | thf_binary_type
 
@@ -27,45 +27,45 @@ thf_binary_assoc     : thf_or_formula | thf_and_formula | thf_apply_formula
 thf_or_formula       : thf_unit_formula VLINE thf_unit_formula | thf_or_formula VLINE thf_unit_formula
 thf_and_formula      : thf_unit_formula AND_CONNECTIVE thf_unit_formula | thf_and_formula AND_CONNECTIVE thf_unit_formula
 
-thf_apply_formula    : thf_unit_formula "@" thf_unit_formula | thf_apply_formula "@" thf_unit_formula
+thf_apply_formula    : thf_unit_formula DENOTING_APPLY thf_unit_formula | thf_apply_formula DENOTING_APPLY thf_unit_formula
 thf_unit_formula     : thf_unitary_formula | thf_unary_formula | thf_defined_infix
 thf_preunit_formula  : thf_unitary_formula | thf_prefix_unary
-thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
+thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | LEFT_PARENTHESES thf_logic_formula RIGHT_PARENTHESES
 
 thf_quantified_formula : thf_quantification thf_unit_formula
-thf_quantification   : THF_QUANTIFIER "[" thf_variable_list "]" ":"
-thf_variable_list    : thf_typed_variable | thf_typed_variable "," thf_variable_list
-thf_typed_variable   : VARIABLE ":" thf_top_level_type | VARIABLE //VARIABLE追加
+thf_quantification   : THF_QUANTIFIER LEFT_SQUARE_BRACKETS thf_variable_list RIGHT_SQUARE_BRACKETS COLON
+thf_variable_list    : thf_typed_variable | thf_typed_variable COMMA thf_variable_list
+thf_typed_variable   : VARIABLE COLON thf_top_level_type | VARIABLE //VARIABLE追加
 thf_unary_formula    : thf_prefix_unary | thf_infix_unary
 thf_prefix_unary     : UNARY_CONNECTIVE thf_preunit_formula
 thf_infix_unary      : thf_unitary_term INFIX_INEQUALITY thf_unitary_term
 thf_atomic_formula   : thf_plain_atomic | thf_defined_atomic | THF_SYSTEM_ATOMIC | thf_fof_function
 thf_plain_atomic     : CONSTANT | thf_tuple 
 
-thf_defined_atomic   : DEFINED_CONSTANT | thf_conditional | thf_let | "(" THF_CONN_TERM ")" | THF_DEFINED_TERM
+thf_defined_atomic   : DEFINED_CONSTANT | thf_conditional | thf_let | LEFT_PARENTHESES THF_CONN_TERM RIGHT_PARENTHESES | THF_DEFINED_TERM
 THF_DEFINED_TERM     : DEFINED_TERM | TH1_DEFINED_TERM
 thf_defined_infix    : thf_unitary_term DEFINED_INFIX_PRED thf_unitary_term
 
 THF_SYSTEM_ATOMIC    : SYSTEM_CONSTANT
 
-thf_fof_function     : FUNCTOR "(" thf_arguments ")" | DEFINED_FUNCTOR "(" thf_arguments ")" | SYSTEM_FUNCTOR "(" thf_arguments ")"
+thf_fof_function     : FUNCTOR LEFT_PARENTHESES thf_arguments RIGHT_PARENTHESES | DEFINED_FUNCTOR LEFT_PARENTHESES thf_arguments RIGHT_PARENTHESES | SYSTEM_FUNCTOR LEFT_PARENTHESES thf_arguments RIGHT_PARENTHESES
 
-thf_conditional      : "$ite(" thf_logic_formula "," thf_logic_formula "," thf_logic_formula ")"
-thf_let              : "$let(" thf_let_types "," thf_let_defns "," thf_formula ")"
-thf_let_types        : thf_atom_typing | "[" thf_atom_typing_list "]"
-thf_atom_typing_list : thf_atom_typing | thf_atom_typing "," thf_atom_typing_list
-thf_let_defns        : thf_let_defn | "[" thf_let_defn_list "]"
+thf_conditional      : DOLLAR_ITE LEFT_PARENTHESES thf_logic_formula COMMA thf_logic_formula COMMA thf_logic_formula RIGHT_PARENTHESES
+thf_let              : DOLLAR_LET LEFT_PARENTHESES thf_let_types COMMA thf_let_defns COMMA thf_formula RIGHT_PARENTHESES
+thf_let_types        : thf_atom_typing | LEFT_SQUARE_BRACKETS thf_atom_typing_list RIGHT_SQUARE_BRACKETS
+thf_atom_typing_list : thf_atom_typing | thf_atom_typing COMMA thf_atom_typing_list
+thf_let_defns        : thf_let_defn | LEFT_SQUARE_BRACKETS thf_let_defn_list RIGHT_SQUARE_BRACKETS
 thf_let_defn         : thf_logic_formula ASSIGNMENT thf_logic_formula
-thf_let_defn_list    : thf_let_defn | thf_let_defn "," thf_let_defn_list
+thf_let_defn_list    : thf_let_defn | thf_let_defn COMMA thf_let_defn_list
 
-thf_unitary_term     : thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
-thf_tuple            : "[]" | "[" thf_formula_list "]"
-thf_formula_list     : thf_logic_formula | thf_logic_formula "," thf_formula_list
+thf_unitary_term     : thf_atomic_formula | VARIABLE | LEFT_PARENTHESES thf_logic_formula RIGHT_PARENTHESES
+thf_tuple            : LEFT_SQUARE_BRACKETS RIGHT_SQUARE_BRACKETS | LEFT_SQUARE_BRACKETS thf_formula_list RIGHT_SQUARE_BRACKETS
+thf_formula_list     : thf_logic_formula | thf_logic_formula COMMA thf_formula_list
 THF_CONN_TERM        : NONASSOC_CONNECTIVE | ASSOC_CONNECTIVE |INFIX_EQUALITY | INFIX_INEQUALITY | UNARY_CONNECTIVE
 
 thf_arguments        : thf_formula_list
 
-thf_atom_typing      : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")" | ARROW ":" thf_top_level_type //ARROW ":" thf_top_level_typeを追加
+thf_atom_typing      : UNTYPED_ATOM COLON thf_top_level_type | LEFT_PARENTHESES thf_atom_typing RIGHT_PARENTHESES | ARROW COLON thf_top_level_type //ARROW ":" thf_top_level_typeを追加
 thf_top_level_type   : thf_unitary_type | thf_mapping_type | thf_apply_type
 
 thf_unitary_type     : thf_unitary_formula
@@ -84,7 +84,7 @@ thf_union_type       : thf_unitary_type PLUS thf_unitary_type | thf_union_type P
 
 thf_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM
 
-thf_sequent          : thf_tuple GENTZEN_ARROW thf_tuple | "(" thf_sequent ")"
+thf_sequent          : thf_tuple GENTZEN_ARROW thf_tuple | LEFT_PARENTHESES thf_sequent RIGHT_PARENTHESES
 
 //logic_defn_rule      : logic_defn_lhs ASSIGNMENT logic_defn_rhs
 //logic_defn_lhs       : logic_defn_value | thf_top_level_type  | NAME
@@ -105,65 +105,65 @@ tff_or_formula       : tff_unit_formula VLINE tff_unit_formula | tff_or_formula 
 tff_and_formula      : tff_unit_formula AND_CONNECTIVE tff_unit_formula | tff_and_formula AND_CONNECTIVE tff_unit_formula
 tff_unit_formula     : tff_unitary_formula | tff_unary_formula | tff_defined_infix
 tff_preunit_formula  : tff_unitary_formula | tff_prefix_unary
-tff_unitary_formula  : tff_quantified_formula | tff_atomic_formula | TFX_UNITARY_FORMULA | "(" tff_logic_formula ")"
+tff_unitary_formula  : tff_quantified_formula | tff_atomic_formula | TFX_UNITARY_FORMULA | LEFT_PARENTHESES tff_logic_formula RIGHT_PARENTHESES
 TFX_UNITARY_FORMULA  : VARIABLE
-tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
+tff_quantified_formula : FOF_QUANTIFIER LEFT_SQUARE_BRACKETS tff_variable_list RIGHT_SQUARE_BRACKETS COLON tff_unit_formula
 
-tff_variable_list    : tff_variable | tff_variable "," tff_variable_list
+tff_variable_list    : tff_variable | tff_variable COMMA tff_variable_list
 tff_variable         : tff_typed_variable | VARIABLE
-tff_typed_variable   : VARIABLE ":" tff_atomic_type
+tff_typed_variable   : VARIABLE COLON tff_atomic_type
 tff_unary_formula    : tff_prefix_unary | tff_infix_unary
 
 tff_prefix_unary     : UNARY_CONNECTIVE tff_preunit_formula
 tff_infix_unary      : tff_unitary_term INFIX_INEQUALITY tff_unitary_term
 
 tff_atomic_formula   : tff_plain_atomic | tff_defined_atomic | tff_system_atomic
-tff_plain_atomic     : CONSTANT | FUNCTOR"("tff_arguments")"
+tff_plain_atomic     : CONSTANT | FUNCTOR LEFT_PARENTHESEStff_argumentsRIGHT_PARENTHESES
 //tff_plain_atomic     : PROPOSITION | PREDICATE"("tff_arguments")"
 tff_defined_atomic   : tff_defined_plain 
 
-tff_defined_plain    : DEFINED_CONSTANT | DEFINED_FUNCTOR "(" tff_arguments ")" | tfx_conditional | tfx_let
+tff_defined_plain    : DEFINED_CONSTANT | DEFINED_FUNCTOR LEFT_PARENTHESES tff_arguments RIGHT_PARENTHESES | tfx_conditional | tfx_let
 //tff_defined_plain    : DEFINED_PROPOSITION | DEFINED_PREDICATE"("tff_arguments")" | tfx_conditional | tfx_let
 
 tff_defined_infix    : tff_unitary_term DEFINED_INFIX_PRED tff_unitary_term
-tff_system_atomic    : SYSTEM_CONSTANT | SYSTEM_FUNCTOR "(" tff_arguments ")"
+tff_system_atomic    : SYSTEM_CONSTANT | SYSTEM_FUNCTOR LEFT_PARENTHESES tff_arguments RIGHT_PARENTHESES
 //tff_system_atomic    : SYSTEM_PROPOSITION |                            SYSTEM_PREDICATE"("tff_arguments")"
-tfx_conditional      : "$ite(" tff_logic_formula "," tff_term "," tff_term ")"
-tfx_let              : "$let(" tfx_let_types "," tfx_let_defns "," tff_term ")"
-tfx_let_types        : tff_atom_typing | "[" tff_atom_typing_list "]"
-tff_atom_typing_list : tff_atom_typing | tff_atom_typing "," tff_atom_typing_list
-tfx_let_defns        : tfx_let_defn | "[" tfx_let_defn_list "]"
+tfx_conditional      : DOLLAR_ITE LEFT_PARENTHESES tff_logic_formula COMMA tff_term COMMA tff_term RIGHT_PARENTHESES
+tfx_let              : DOLLAR_LET LEFT_PARENTHESES tfx_let_types COMMA tfx_let_defns COMMA tff_term RIGHT_PARENTHESES
+tfx_let_types        : tff_atom_typing | LEFT_SQUARE_BRACKETS tff_atom_typing_list RIGHT_SQUARE_BRACKETS
+tff_atom_typing_list : tff_atom_typing | tff_atom_typing COMMA tff_atom_typing_list
+tfx_let_defns        : tfx_let_defn | LEFT_SQUARE_BRACKETS tfx_let_defn_list RIGHT_SQUARE_BRACKETS
 tfx_let_defn         : tfx_let_lhs ASSIGNMENT tff_term
 tfx_let_lhs          : tff_plain_atomic | tfx_tuple
-tfx_let_defn_list    : tfx_let_defn | tfx_let_defn "," tfx_let_defn_list
+tfx_let_defn_list    : tfx_let_defn | tfx_let_defn COMMA tfx_let_defn_list
 
 tff_term             : tff_logic_formula | DEFINED_TERM | tfx_tuple
-tff_unitary_term     : tff_atomic_formula | DEFINED_TERM | tfx_tuple | VARIABLE | "(" tff_logic_formula ")"
-tfx_tuple            : "[]" | "[" tff_arguments "]"
+tff_unitary_term     : tff_atomic_formula | DEFINED_TERM | tfx_tuple | VARIABLE | LEFT_PARENTHESES tff_logic_formula RIGHT_PARENTHESES
+tfx_tuple            : LEFT_SQUARE_BRACKETS RIGHT_SQUARE_BRACKETS | LEFT_SQUARE_BRACKETS tff_arguments RIGHT_SQUARE_BRACKETS
 
-tff_arguments        : tff_term | tff_term "," tff_arguments
+tff_arguments        : tff_term | tff_term COMMA tff_arguments
 
-tff_atom_typing      : UNTYPED_ATOM ":" tff_top_level_type | "("tff_atom_typing")"
+tff_atom_typing      : UNTYPED_ATOM COLON tff_top_level_type | LEFT_PARENTHESEStff_atom_typingRIGHT_PARENTHESES
 tff_top_level_type   : tff_atomic_type | tff_non_atomic_type
-tff_non_atomic_type  : tff_mapping_type | tf1_quantified_type | "(" tff_non_atomic_type ")"
-tf1_quantified_type  : "!>" "[" tff_variable_list "]" ":" tff_monotype
-tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
-tff_unitary_type     : tff_atomic_type | "(" tff_xprod_type ")"
-tff_atomic_type      : TYPE_CONSTANT | DEFINED_TYPE | VARIABLE | TYPE_FUNCTOR "(" tff_type_arguments ")" | "(" tff_atomic_type ")" | tfx_tuple_type 
-tff_type_arguments   : tff_atomic_type | tff_atomic_type "," tff_type_arguments
+tff_non_atomic_type  : tff_mapping_type | tf1_quantified_type | LEFT_PARENTHESES tff_non_atomic_type RIGHT_PARENTHESES
+tf1_quantified_type  : TH1_QUANTIFIER LEFT_SQUARE_BRACKETS tff_variable_list RIGHT_SQUARE_BRACKETS COLON tff_monotype
+tff_monotype         : tff_atomic_type | LEFT_PARENTHESES tff_mapping_type RIGHT_PARENTHESES | tf1_quantified_type
+tff_unitary_type     : tff_atomic_type | LEFT_PARENTHESES tff_xprod_type RIGHT_PARENTHESES
+tff_atomic_type      : TYPE_CONSTANT | DEFINED_TYPE | VARIABLE | TYPE_FUNCTOR LEFT_PARENTHESES tff_type_arguments RIGHT_PARENTHESES | LEFT_PARENTHESES tff_atomic_type RIGHT_PARENTHESES | tfx_tuple_type 
+tff_type_arguments   : tff_atomic_type | tff_atomic_type COMMA tff_type_arguments
 tff_mapping_type     : tff_unitary_type ARROW tff_atomic_type
 tff_xprod_type       : tff_unitary_type STAR tff_atomic_type | tff_xprod_type STAR tff_atomic_type
 
-tfx_tuple_type       : "[" tff_type_list "]"
-tff_type_list        : tff_top_level_type | tff_top_level_type "," tff_type_list
+tfx_tuple_type       : LEFT_SQUARE_BRACKETS tff_type_list RIGHT_SQUARE_BRACKETS
+tff_type_list        : tff_top_level_type | tff_top_level_type COMMA tff_type_list
 
 tff_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM 
 
-tfx_sequent          : tfx_tuple GENTZEN_ARROW tfx_tuple | "(" tfx_sequent ")"
+tfx_sequent          : tfx_tuple GENTZEN_ARROW tfx_tuple | LEFT_PARENTHESES tfx_sequent RIGHT_PARENTHESES
 
 tcf_formula          : tcf_logic_formula | tff_atom_typing
 tcf_logic_formula    : tcf_quantified_formula | cnf_formula
-tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formula
+tcf_quantified_formula : FOF_QUANTIFIER LEFT_SQUARE_BRACKETS tff_variable_list RIGHT_SQUARE_BRACKETS COLON cnf_formula
 
 fof_formula          : fof_logic_formula | fof_sequent
 fof_logic_formula    : fof_binary_formula | fof_unary_formula | fof_unitary_formula
@@ -180,10 +180,10 @@ fof_unary_formula    : UNARY_CONNECTIVE fof_unit_formula | fof_infix_unary
 fof_infix_unary      : fof_term INFIX_INEQUALITY fof_term
 
 fof_unit_formula     : fof_unitary_formula | fof_unary_formula
-fof_unitary_formula  : fof_quantified_formula | fof_atomic_formula | "(" fof_logic_formula ")"
+fof_unitary_formula  : fof_quantified_formula | fof_atomic_formula | LEFT_PARENTHESES fof_logic_formula RIGHT_PARENTHESES
 
-fof_quantified_formula : FOF_QUANTIFIER "[" fof_variable_list "]" ":" fof_unit_formula
-fof_variable_list    : VARIABLE | VARIABLE "," fof_variable_list
+fof_quantified_formula : FOF_QUANTIFIER LEFT_SQUARE_BRACKETS fof_variable_list RIGHT_SQUARE_BRACKETS COLON fof_unit_formula
+fof_variable_list    : VARIABLE | VARIABLE COMMA fof_variable_list
 fof_atomic_formula   : fof_plain_atomic_formula | fof_defined_atomic_formula | fof_system_atomic_formula
 fof_plain_atomic_formula : fof_plain_term
 //fof_plain_atomic_formula : PROPOSITION | PREDICATE"("fof_arguments")"
@@ -194,26 +194,26 @@ fof_defined_infix_formula : fof_term DEFINED_INFIX_PRED fof_term
 
 fof_system_atomic_formula : fof_system_term
 
-fof_plain_term       : CONSTANT | FUNCTOR "(" fof_arguments ")"
+fof_plain_term       : CONSTANT | FUNCTOR LEFT_PARENTHESES fof_arguments RIGHT_PARENTHESES
 
 fof_defined_term     : DEFINED_TERM | fof_defined_atomic_term
 fof_defined_atomic_term  : fof_defined_plain_term
 
-fof_defined_plain_term   : DEFINED_CONSTANT | DEFINED_FUNCTOR "(" fof_arguments ")"
+fof_defined_plain_term   : DEFINED_CONSTANT | DEFINED_FUNCTOR LEFT_PARENTHESES fof_arguments RIGHT_PARENTHESES
 
-fof_system_term      : SYSTEM_CONSTANT | SYSTEM_FUNCTOR "(" fof_arguments ")"
+fof_system_term      : SYSTEM_CONSTANT | SYSTEM_FUNCTOR LEFT_PARENTHESES fof_arguments RIGHT_PARENTHESES
 
-fof_arguments        : fof_term | fof_term "," fof_arguments
+fof_arguments        : fof_term | fof_term COMMA fof_arguments
 
 fof_term             : fof_function_term | VARIABLE
 fof_function_term    : fof_plain_term | fof_defined_term | fof_system_term
 
-fof_sequent          : fof_formula_tuple GENTZEN_ARROW fof_formula_tuple | "(" fof_sequent ")"
+fof_sequent          : fof_formula_tuple GENTZEN_ARROW fof_formula_tuple | LEFT_PARENTHESES fof_sequent RIGHT_PARENTHESES
 
-fof_formula_tuple    : "{}" | "{" fof_formula_tuple_list "}"
-fof_formula_tuple_list : fof_logic_formula |  fof_logic_formula "," fof_formula_tuple_list
+fof_formula_tuple    : LEFT_CURLY_BRACKETS RIGHT_CURLY_BRACKETS | LEFT_CURLY_BRACKETS fof_formula_tuple_list RIGHT_CURLY_BRACKETS
+fof_formula_tuple_list : fof_logic_formula |  fof_logic_formula COMMA fof_formula_tuple_list
 
-cnf_formula          : disjunction | "(" disjunction ")"
+cnf_formula          : disjunction | LEFT_PARENTHESES disjunction RIGHT_PARENTHESES
 disjunction          : literal | disjunction VLINE literal
 literal              : fof_atomic_formula | UNARY_CONNECTIVE fof_atomic_formula | fof_infix_unary
 
@@ -295,7 +295,7 @@ source               : general_term
 // creator_source       : "creator" "(" CREATOR_NAME optional_info ")"
 // CREATOR_NAME         : ATOMIC_WORD
 
-optional_info        : "," useful_info | null
+optional_info        : COMMA useful_info | null
 useful_info          : general_list
 //useful_info          : [] | [info_items]
 // info_items           : info_item | info_item "," info_items
@@ -323,19 +323,50 @@ useful_info          : general_list
 
 // principal_symbol     : FUNCTOR | VARIABLE
 
-include              : "include" "(" FILE_NAME formula_selection ")" "."
-formula_selection    : "," "[" name_list "]" | null
+include              : INCLUDE LEFT_PARENTHESES FILE_NAME formula_selection RIGHT_PARENTHESES PERIOD
+formula_selection    : COMMA LEFT_SQUARE_BRACKETS name_list RIGHT_SQUARE_BRACKETS | null
 name_list            : NAME | NAME name_list
 
-general_term         : general_data | general_data ":" general_term | general_list
+general_term         : general_data | general_data COLON general_term | general_list
 general_data         : ATOMIC_WORD | general_function | VARIABLE | NUMBER | DISTINCT_OBJECT | formula_data
-general_function     : ATOMIC_WORD "(" general_terms ")"
+general_function     : ATOMIC_WORD LEFT_PARENTHESES general_terms RIGHT_PARENTHESES
 
 //general_data         : "bind" "("VARIABLE "," formula_data")" | "bind_type" "("VARIABLE "," bound_type")"
 // bound_type           : "$thf(" thf_top_level_type ")" | "$tff(" tff_top_level_type ")"
-formula_data         : "$thf(" thf_formula ")" | "$tff(" tff_formula ")" | "$fof(" fof_formula ")" | "$cnf(" cnf_formula ")" | "$fot(" fof_term ")"
-general_list         : "[]" | "[" general_terms "]"
-general_terms        : general_term | general_term "," general_terms
+formula_data         : DOLLAR_THF LEFT_PARENTHESES thf_formula RIGHT_PARENTHESES | DOLLAR_TFF LEFT_PARENTHESES tff_formula RIGHT_PARENTHESES | DOLLAR_FOF LEFT_PARENTHESES fof_formula RIGHT_PARENTHESES | DOLLAR_CNF LEFT_PARENTHESES cnf_formula RIGHT_PARENTHESES | DOLLAR_FOT LEFT_PARENTHESES fof_term RIGHT_PARENTHESES
+general_list         : LEFT_SQUARE_BRACKETS RIGHT_SQUARE_BRACKETS | LEFT_SQUARE_BRACKETS general_terms RIGHT_SQUARE_BRACKETS
+general_terms        : general_term | general_term COMMA general_terms
+
+TPI                  : "tpi"
+THF                  : "thf"
+TFF                  : "tff"
+TCF                  : "tcf"
+FOF                  : "fof"
+CNF                  : "cnf"
+DOLLAR_ITE           : "$ite"
+DOLLAR_LET           : "$let"
+DOLLAR_THF           : "$thf"
+DOLLAR_TFF           : "$tff"
+DOLLAR_FOF           : "$fof"
+DOLLAR_CNF           : "$cnf"
+DOLLAR_FOT           : "$fot"
+INCLUDE              : "include"
+
+LEFT_PARENTHESES     : "("
+RIGHT_PARENTHESES    : ")"
+
+LEFT_CURLY_BRACKETS  : "{"
+RIGHT_CURLY_BRACKETS : "}"
+
+LEFT_SQUARE_BRACKETS : "["
+RIGHT_SQUARE_BRACKETS: "]"
+
+COLON                : ":"
+
+COMMA                : ","
+PERIOD               : "."
+
+DENOTING_APPLY       : "@"
 
 NAME                 : ATOMIC_WORD | INTEGER
 
@@ -351,7 +382,7 @@ null                 :
 COMMENT              : COMMENT_LINE|COMMENT_BLOCK
 COMMENT_LINE         : /[%]/ PRINTABLE_CHAR*
 COMMENT_BLOCK        : /[\/]//[*]/NOT_STAR_SLASH/[*]//[*]/*/[\/]/
-NOT_STAR_SLASH       : "("/[^*]/*/[*]//[*]/*/[^\/*]/")"*/[^*]/*
+NOT_STAR_SLASH       : LEFT_PARENTHESES/[^*]/*/[*]//[*]/*/[^\/*]/RIGHT_PARENTHESES*/[^*]/*
 
 
 SINGLE_QUOTED        : SINGLE_QUOTE SQ_CHAR SQ_CHAR * SINGLE_QUOTE
