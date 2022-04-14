@@ -59,7 +59,7 @@ thf_let_defn         : thf_logic_formula ASSIGNMENT thf_logic_formula
 thf_let_defn_list    : thf_let_defn | thf_let_defn "," thf_let_defn_list
 
 thf_unitary_term     : thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
-thf_tuple            : "[" "]" | "[" thf_formula_list "]"
+thf_tuple            : "[]" | "[" thf_formula_list "]"
 thf_formula_list     : thf_logic_formula | thf_logic_formula "," thf_formula_list
 THF_CONN_TERM        : NONASSOC_CONNECTIVE | ASSOC_CONNECTIVE |INFIX_EQUALITY | INFIX_INEQUALITY | UNARY_CONNECTIVE
 
@@ -139,7 +139,7 @@ tfx_let_defn_list    : tfx_let_defn | tfx_let_defn "," tfx_let_defn_list
 
 tff_term             : tff_logic_formula | DEFINED_TERM | tfx_tuple
 tff_unitary_term     : tff_atomic_formula | DEFINED_TERM | tfx_tuple | VARIABLE | "(" tff_logic_formula ")"
-tfx_tuple            : "[" "]" | "[" tff_arguments "]"
+tfx_tuple            : "[]" | "[" tff_arguments "]"
 
 tff_arguments        : tff_term | tff_term "," tff_arguments
 
@@ -210,7 +210,7 @@ fof_function_term    : fof_plain_term | fof_defined_term | fof_system_term
 
 fof_sequent          : fof_formula_tuple GENTZEN_ARROW fof_formula_tuple | "(" fof_sequent ")"
 
-fof_formula_tuple    : "{" "}" | "{" fof_formula_tuple_list "}"
+fof_formula_tuple    : "{}" | "{" fof_formula_tuple_list "}"
 fof_formula_tuple_list : fof_logic_formula |  fof_logic_formula "," fof_formula_tuple_list
 
 cnf_formula          : disjunction | "(" disjunction ")"
@@ -334,7 +334,7 @@ general_function     : ATOMIC_WORD "(" general_terms ")"
 //general_data         : "bind" "("VARIABLE "," formula_data")" | "bind_type" "("VARIABLE "," bound_type")"
 // bound_type           : "$thf(" thf_top_level_type ")" | "$tff(" tff_top_level_type ")"
 formula_data         : DOLLAR_THF "(" thf_formula ")" | DOLLAR_TFF "(" tff_formula ")" | DOLLAR_FOF "(" fof_formula ")" | DOLLAR_CNF "(" cnf_formula ")" | DOLLAR_FOT "(" fof_term ")"
-general_list         : "[" "]" | "[" general_terms "]"
+general_list         : "[]" | "[" general_terms "]"
 general_terms        : general_term | general_term "," general_terms
 
 TPI                  : "tpi"
@@ -368,7 +368,7 @@ null                 :
 COMMENT              : COMMENT_LINE|COMMENT_BLOCK
 COMMENT_LINE         : /[%]/ PRINTABLE_CHAR*
 COMMENT_BLOCK        : /[\/]//[*]/NOT_STAR_SLASH/[*]//[*]/*/[\/]/
-NOT_STAR_SLASH       : "(" /[^*]/*/[*]//[*]/*/[^\/*]/ ")" */[^*]/*
+NOT_STAR_SLASH       : "("/[^*]/*/[*]//[*]/*/[^\/*]/")"*/[^*]/*
 
 
 SINGLE_QUOTED        : SINGLE_QUOTE SQ_CHAR SQ_CHAR * SINGLE_QUOTE
