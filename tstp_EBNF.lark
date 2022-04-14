@@ -27,7 +27,7 @@ thf_binary_assoc     : thf_or_formula | thf_and_formula | thf_apply_formula
 thf_or_formula       : thf_unit_formula VLINE thf_unit_formula | thf_or_formula VLINE thf_unit_formula
 thf_and_formula      : thf_unit_formula AND_CONNECTIVE thf_unit_formula | thf_and_formula AND_CONNECTIVE thf_unit_formula
 
-thf_apply_formula    : thf_unit_formula DENOTING_APPLY thf_unit_formula | thf_apply_formula DENOTING_APPLY thf_unit_formula
+thf_apply_formula    : thf_unit_formula APPLY_SYMBOL thf_unit_formula | thf_apply_formula APPLY_SYMBOL thf_unit_formula
 thf_unit_formula     : thf_unitary_formula | thf_unary_formula | thf_defined_infix
 thf_preunit_formula  : thf_unitary_formula | thf_prefix_unary
 thf_unitary_formula  : thf_quantified_formula | thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
@@ -352,7 +352,7 @@ DOLLAR_CNF           : "$cnf"
 DOLLAR_FOT           : "$fot"
 INCLUDE              : "include"
 
-DENOTING_APPLY       : "@"
+APPLY_SYMBOL         : "@"
 
 NAME                 : ATOMIC_WORD | INTEGER
 
