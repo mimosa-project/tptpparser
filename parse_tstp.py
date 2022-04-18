@@ -252,7 +252,11 @@ class ParseTstp():
         Returns:
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
-        return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] == "$REMOVE_CHILD_TOKEN"
+        child_token = [
+            child.value for child in cst.children if type(child) == Token]
+        # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンが互いに素でないかを調べることで
+        # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
+        return self.__satisfy_name_inherit_condition(cst.data) and not set(NODE_MODIFICATION_RULE[cst.data]["child"]).isdisjoint(set(child_token))
 
     def __is_inherit_symbol_info(self, cst):
         """__is_inherit_symbol_info
