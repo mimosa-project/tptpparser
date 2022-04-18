@@ -195,7 +195,7 @@ class ParseTstp():
 
         return (cst_data in NODE_MODIFICATION_RULE) and (NODE_MODIFICATION_RULE[cst_data][1] is not None)
 
-    def __satisfy_token_remove_condition(self, cst_parent_data, cst_siblings_num):
+    def __satisfy_token_remove_condition(self, cst, cst_parent_data):
         """__satisfy_token_remove_condition
 
         削除するトークンかどうかを判定する関数
@@ -204,13 +204,13 @@ class ParseTstp():
                     thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
 
         Args:
+            cst (Token): 具象構文木のノード
             cst_parent_data (str): 具象構文木の親ノードの名前
-            cst_siblings_num (int): 具象構文木の兄弟の数
 
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data][1] == "$REMOVE_CHILD_TOKEN" and cst_siblings_num >= 2
+        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.value
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
         """__satisfy_node_remove_condition
@@ -305,7 +305,7 @@ class ParseTstp():
 
         # トークンの場合
         if type(cst) != Tree:
-            if not self.__satisfy_token_remove_condition(cst_parent_data, cst_siblings_num):
+            if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
                 ast.children.append(cst)
             return ast
 
