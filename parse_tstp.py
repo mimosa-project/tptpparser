@@ -276,9 +276,7 @@ class ParseTstp():
     def __has_formula_parent(self, cst_data, cst_parent_data):
         """__has_formula_parent
 
-        親ノードの条件がformula_dataかどうかをboolで返す関数
-            * 親ノードの条件があるかつ、引継ぎ元がある場合は親ノードの条件がformula_dataである場合しかない
-              そのため、式に意味はない
+        親ノードのがformula_dataかどうかをboolで返す関数
 
         Args:
             cst_data(str): 具象構文木のノード名
@@ -287,8 +285,7 @@ class ParseTstp():
         Returns:
             (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
         """
-        # この式に意味はない
-        return self.__satisfy_parent_condition(cst_data, cst_parent_data) and self.__satisfy_name_inherit_condition(cst_data)
+        return self.__satisfy_parent_condition(cst_data, cst_parent_data) and cst_parent_data == "formula_data"
 
     def convert_cst2ast(self, cst, ast=None, cst_parent_data=None, cst_siblings_num=None):
         """convert_cst2ast
