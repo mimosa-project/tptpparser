@@ -233,8 +233,8 @@ class ParseTstp():
             (bool): 削除するならTrue、そうでないならFalse
         """
         is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
-            and NODE_MODIFICATION_RULE[cst_data][0] == None \
-            and NODE_MODIFICATION_RULE[cst_data][1] == None
+            and "parent" in NODE_MODIFICATION_RULE[cst_data] \
+            and "child" in NODE_MODIFICATION_RULE[cst_data]
         is_enclosed_with_parentheses = self.__satisfy_parent_condition(cst_data, cst_parent_data) \
             and not self.__satisfy_name_inherit_condition(cst_data)
         return not is_leave_unconditional and not is_enclosed_with_parentheses
