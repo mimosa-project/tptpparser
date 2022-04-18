@@ -193,7 +193,7 @@ class ParseTstp():
             (bool): 作成するノード名の引継元があるならTrueそうでないならFalse
         """
 
-        return (cst_data in NODE_MODIFICATION_RULE) and (NODE_MODIFICATION_RULE[cst_data][1] is not None)
+        return cst_data in NODE_MODIFICATION_RULE and "child" in NODE_MODIFICATION_RULE[cst_data]
 
     def __satisfy_token_remove_condition(self, cst, cst_parent_data):
         """__satisfy_token_remove_condition
