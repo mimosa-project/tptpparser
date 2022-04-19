@@ -210,7 +210,7 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-        return cst_parent_data in NODE_MODIFICATION_RULE and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.value
+        return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.value
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
         """__satisfy_node_remove_condition
