@@ -258,21 +258,6 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and not set(NODE_MODIFICATION_RULE[cst.data]["child"]).isdisjoint(set(child_token))
 
-    def __is_inherit_symbol_info(self, cst):
-        """__is_inherit_symbol_info
-
-        シンボル情報を付与するかどうかをboolで返す関数
-        具体例
-            thf_apply_formula    : thf_unit_formula "@" thf_unit_formula | thf_apply_formula "@" thf_unit_formula
-
-        Args:
-            cst(Tree): 具象構文木のノード
-
-        Returns:
-            (bool): シンボル情報を付与するならTrueそうでないならFalse
-        """
-        return self.__satisfy_name_inherit_condition(cst.data) and len(cst.children) >= 2 and NODE_MODIFICATION_RULE[cst.data][1] != "$REMOVE_CHILD_TOKEN"
-
     def __has_formula_parent(self, cst_data, cst_parent_data):
         """__has_formula_parent
 
