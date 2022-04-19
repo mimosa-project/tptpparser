@@ -210,7 +210,7 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-        return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.value
+        return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.type
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
         """__satisfy_node_remove_condition
@@ -233,8 +233,7 @@ class ParseTstp():
             (bool): 削除するならTrue、そうでないならFalse
         """
         is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
-            and "parent" in NODE_MODIFICATION_RULE[cst_data] \
-            and "child" in NODE_MODIFICATION_RULE[cst_data]
+            and not NODE_MODIFICATION_RULE[cst_data]
         is_enclosed_with_parentheses = self.__satisfy_parent_condition(cst_data, cst_parent_data) \
             and not self.__satisfy_name_inherit_condition(cst_data)
         return not is_leave_unconditional and not is_enclosed_with_parentheses
@@ -253,10 +252,16 @@ class ParseTstp():
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
         child_token = [
-            child.value for child in cst.children if type(child) == Token]
-        # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンが互いに素でないかを調べることで
+            child.type for child in cst.children if type(child) == Token]
+        if self.__satisfy_name_inherit_condition(cst.data) and type(NODE_MODIFICATION_RULE[cst.data]["child"]) == list:
+            child_node_name_set = set(
+                NODE_MODIFICATION_RULE[cst.data]["child"])
+        elif self.__satisfy_name_inherit_condition(cst.data):
+            child_node_name_set = set(
+                [NODE_MODIFICATION_RULE[cst.data]["child"]])
+        # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンに積集合があるかを調べることで
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
-        return self.__satisfy_name_inherit_condition(cst.data) and not set(NODE_MODIFICATION_RULE[cst.data]["child"]).isdisjoint(set(child_token))
+        return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
     def __has_formula_parent(self, cst_data, cst_parent_data):
         """__has_formula_parent
@@ -300,7 +305,7 @@ class ParseTstp():
             ast_next = ast.children[-1]
         elif self.__has_formula_parent(cst.data, cst_parent_data) or self.__is_inherit_token_info(cst):
             for child in cst.children:
-                if type(child) == Token and child.value in NODE_MODIFICATION_RULE[cst.data]["child"]:
+                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
                     token = child
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
