@@ -287,7 +287,7 @@ class ParseTstp():
         """
         return self.__satisfy_parent_condition(cst_data, cst_parent_data) and cst_parent_data == "formula_data"
 
-    def convert_cst2ast(self, cst, ast=None, cst_parent_data=None, cst_siblings_num=None):
+    def convert_cst2ast(self, cst, ast=None, cst_parent_data=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -296,7 +296,6 @@ class ParseTstp():
             cst(Tree or Token): 具象構文木のノード
             ast(Tree): 抽象構文木のノード
             cst_parent_data(str): 具象構文木の親のノード名
-            cst_siblings_num(int): 具象構文木の兄弟の数
 
         Returns:
             ast(Tree): 最終的に作成される抽象構文木
@@ -314,15 +313,9 @@ class ParseTstp():
         if not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
-        elif self.__has_formula_parent(cst.data, cst_parent_data) or self.__is_inherit_symbol_info(cst):
-            # NODE_MODIFICATION_RULEのvalueである、親ノードの条件と作成するノード名の引継元がどちらもあるときは
-            # 作成するノード名の引継元が記号の場合しかないため、作成するノード名の引継元が記号の場合の処理と同様になる
-            ast.children.append(
-                Tree(NODE_MODIFICATION_RULE[cst.data][1] + "," + cst.data, []))
-            ast_next = ast.children[-1]
-        elif self.__is_inherit_token_info(cst):
+        elif self.__has_formula_parent(cst.data, cst_parent_data) or self.__is_inherit_token_info(cst):
             for child in cst.children:
-                if type(child) == Token:
+                if type(child) == Token and child.value in NODE_MODIFICATION_RULE[cst.data]["child"]:
                     token = child
                     ast.children.append(
                         Tree(token.value + "," + token.type, []))
@@ -333,7 +326,7 @@ class ParseTstp():
             ast_next = ast
 
         for child in cst.children:
-            self.convert_cst2ast(child, ast_next, cst.data, len(cst.children))
+            self.convert_cst2ast(child, ast_next, cst.data)
 
         return ast
 
