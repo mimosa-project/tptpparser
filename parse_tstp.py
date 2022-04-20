@@ -210,6 +210,7 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
+
         return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.type
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
@@ -348,6 +349,8 @@ class ParseTstp():
         Returns:
             formula_label (str): 導出された式のラベル
         """
+        if len(ast_top.children) == 0:
+            return ""
         formula_label = ast_top.children[0].value
         return formula_label
 
