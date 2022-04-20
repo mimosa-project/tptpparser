@@ -349,7 +349,7 @@ class ParseTstp():
         Returns:
             formula_label (str): 導出された式のラベル
         """
-        if len(ast_top.children) == 0:
+        if not ast_top.children:
             return ""
         formula_label = ast_top.children[0].value
         return formula_label
