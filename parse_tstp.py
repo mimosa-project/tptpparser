@@ -379,8 +379,10 @@ class ParseTstp():
             assumption_formula_labels (list): 参照した式のラベルのリスト
         """
         assumption_formula_labels = list()
+        if not ast_top.children and not ast_top.childlen[-1].children:
+            return assumption_formula_labels
         annotations = ast_top.children[-1].children
-        if not self.__is_inference(annotations):
+        if not self.__is_inference(annotations) or not annotations[0].children:
             return assumption_formula_labels
         inference_parents = annotations[0].children[-1].children
         for inference_parent in inference_parents:
