@@ -220,7 +220,7 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-
+        # すでに親ノードでトークンを付与しているなら抽象構文木に加えない(方針7)
         return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.type
 
     def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
@@ -243,8 +243,10 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
+        # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
         is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
             and not NODE_MODIFICATION_RULE[cst_data]
+        # ある文法導出に対して「括弧で括られている」ものは残す(方針4,9)
         is_enclosed_with_parentheses = self.__satisfy_parent_condition(cst_data, cst_parent_data) \
             and not self.__satisfy_name_inherit_condition(cst_data)
         return not is_leave_unconditional and not is_enclosed_with_parentheses
@@ -270,6 +272,7 @@ class ParseTstp():
         elif self.__satisfy_name_inherit_condition(cst.data):
             child_node_name_set = set(
                 [NODE_MODIFICATION_RULE[cst.data]["child"]])
+        # ファンクターや演算子等のトークンが子にあるならトークン情報を付与する(方針5,6,8)
         # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンに積集合があるかを調べることで
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
@@ -286,6 +289,7 @@ class ParseTstp():
         Returns:
             (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
         """
+        # 親ノード名がformula_dataなら、括弧が使用されているため残し、トークン情報を付与する(方針4,6)
         return self.__satisfy_parent_condition(cst_data, cst_parent_data) and cst_parent_data == "formula_data"
 
     def convert_cst2ast(self, cst, ast=None, cst_parent_data=None):
