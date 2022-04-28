@@ -195,6 +195,7 @@ class ParseTstp():
         """__satisfy_name_inherit_condition
 
         NODE_MODIFICATION_RULEの作成するノード名の引継元があるかどうかをboolで返す関数
+        NODE_MODIFICATION_RULEでparentが一致しているかどうかは関数外で確認する
 
         Args:
             cst_data(str): 具象構文木のノード名
