@@ -252,6 +252,27 @@ class ParseTstp():
             and not self.__satisfy_name_inherit_condition(cst_data)
         return not is_leave_unconditional and not is_enclosed_with_parentheses
 
+    def __get_children_from_rule(self, cst_data):
+        """__get_children_from_rule
+
+        NODE_MODIFICATION_RULEから作成するノード名の引継元を取得し、setにして返す関数
+
+        Args:
+            cst_data(str): 具象構文木のノード名
+
+        Returns:
+            child_node_name_set(set): setにしたノード名の引継元
+        """
+        if self.__satisfy_name_inherit_condition(cst_data) and type(NODE_MODIFICATION_RULE[cst_data]["child"]) == list:
+            child_node_name_set = set(
+                NODE_MODIFICATION_RULE[cst_data]["child"])
+        elif self.__satisfy_name_inherit_condition(cst_data):
+            child_node_name_set = set(
+                [NODE_MODIFICATION_RULE[cst_data]["child"]])
+        else:
+            child_node_name_set = set()
+        return child_node_name_set
+
     def __is_inherit_token_info(self, cst):
         """__is_inherit_token_info
 
@@ -267,12 +288,7 @@ class ParseTstp():
         """
         child_token = [
             child.type for child in cst.children if type(child) == Token]
-        if self.__satisfy_name_inherit_condition(cst.data) and type(NODE_MODIFICATION_RULE[cst.data]["child"]) == list:
-            child_node_name_set = set(
-                NODE_MODIFICATION_RULE[cst.data]["child"])
-        elif self.__satisfy_name_inherit_condition(cst.data):
-            child_node_name_set = set(
-                [NODE_MODIFICATION_RULE[cst.data]["child"]])
+        child_node_name_set = self.__get_children_from_rule(cst.data)
         # ファンクターや演算子等のトークンが子にあるならトークン情報を付与する(方針5,6,8)
         # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンに積集合があるかを調べることで
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
