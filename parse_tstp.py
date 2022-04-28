@@ -18,19 +18,15 @@ from networkx.readwrite import json_graph
 # 5. thf_atom_typing : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
 #   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
 # 6. ノード名 トークン(+など)or記号(@など) ノード名、記号"("ノード名...")"、 トークン"("ノード名...")"、 トークン ノード名...となっている場合はそのノードにトークン、記号の情報を付与する
+#    このとき、付与したトークンは消す
 #   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
 # 7. 親ノードにトークン情報が付与されていないトークンは残す
 #   * 方針6のトークンでないかどうかで判定
 # 8. tf1_quantified_type : "!>" "[" tff_variable_list "]" ":" tff_monotypeや、
 #    tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formulaのように
 #    文字列 or トークン"[" ノード名 "]" ":" ノード名となっている場合は、文字列、トークン情報を付与する
+#    このとき、付与したトークンは消す
 #   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
-# 9. 8の時、"[" ノード名 "]"のノード名()は飛ばさないようにする
-#    理由
-#    "[" ノード名 "]"はノードA : ノードB "," ノードAのように再帰されている
-#    これを飛ばすとtf1_quantified_type等のノードの子に"[" ノード名 "]"を展開したものと":" ノード名が来る
-#    これだと子を見た時、どこまでが"[" ノード名 "]"を展開したものなのか判別不能なため、このような場合のみ"[" ノード名 "]"を残す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のparent(key)のvalueと親ノード名が一致するかどうかで判定
 
 # 具象構文木から抽象構文木を構築するときにノードを作成するルール
 # key: 現在のノード（具象構文木）
