@@ -319,7 +319,7 @@ class ParseTstp():
         if not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
-        elif self.__has_formula_parent(cst.data, cst_parent_data) or self.__is_inherit_token_info(cst):
+        elif self.__has_formula_parent(cst_parent_data) or self.__is_inherit_token_info(cst):
             for child in cst.children:
                 if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
                     token = child
