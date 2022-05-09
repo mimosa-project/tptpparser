@@ -240,13 +240,10 @@ class ParseTstp():
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-        # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
-        is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE \
-            and not NODE_MODIFICATION_RULE[cst_data]
+        # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
         # ある文法導出に対して「括弧で括られている」ものは残す(方針4,9)
-        is_enclosed_with_parentheses = self.__satisfy_parent_condition(cst_data, cst_parent_data) \
-            and not self.__satisfy_name_inherit_condition(cst_data)
-        return not is_leave_unconditional and not is_enclosed_with_parentheses
+        # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
+        return not cst_data in NODE_MODIFICATION_RULE or not self.__satisfy_parent_condition(cst_data, cst_parent_data) and NODE_MODIFICATION_RULE[cst_data]
 
     def __get_children_from_rule(self, cst_data):
         """__get_children_from_rule
@@ -328,10 +325,7 @@ class ParseTstp():
             return ast
 
         # これ以降は内部ノード
-        if not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
-            ast.children.append(Tree(cst.data, []))
-            ast_next = ast.children[-1]
-        elif self.__has_formula_parent(cst_parent_data) or self.__is_inherit_token_info(cst):
+        if self.__has_formula_parent(cst_parent_data) or self.__is_inherit_token_info(cst):
             for child in cst.children:
                 if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
                     token = child
@@ -340,6 +334,9 @@ class ParseTstp():
                     ast_next = ast.children[-1]
                     # 子にトークンは一つしか存在しないためbreakする
                     break
+        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
+            ast.children.append(Tree(cst.data, []))
+            ast_next = ast.children[-1]
         else:
             ast_next = ast
 
