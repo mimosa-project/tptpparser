@@ -247,10 +247,11 @@ class ParseTstp():
         # 子が二つ以上ある場合は残す(方針2)
         is_used_colon = cst.data in node_name_used_colon and len(
             cst.children) >= 2
-        # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
-        # ある文法導出に対して「括弧で括られている」ものは残す(方針4,9)
         # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
-        return not cst.data in NODE_MODIFICATION_RULE or not self.__satisfy_parent_condition(cst.data, cst_parent_data) and NODE_MODIFICATION_RULE[cst.data] and not is_used_colon
+        is_leave_unconditional = cst.data in NODE_MODIFICATION_RULE and not NODE_MODIFICATION_RULE[
+            cst.data]
+        # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
+        return not cst.data in NODE_MODIFICATION_RULE and not is_used_colon or not self.__satisfy_parent_condition(cst.data, cst_parent_data) and not is_leave_unconditional
 
     def __get_children_from_rule(self, cst_data):
         """__get_children_from_rule
