@@ -326,14 +326,12 @@ class ParseTstp():
 
         # これ以降は内部ノード
         if self.__has_formula_parent(cst_parent_data) or self.__is_inherit_token_info(cst):
-            for child in cst.children:
-                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
-                    token = child
-                    ast.children.append(
-                        Tree(token.value + "," + token.type, []))
-                    ast_next = ast.children[-1]
-                    # 子にトークンは一つしか存在しないためbreakする
-                    break
+            # 上に上げるトークンは一つしか存在しないため、inherit_tokenの要素は一つしかない
+            inherit_token = [child for child in cst.children if type(
+                child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]][0]
+            ast.children.append(
+                Tree(inherit_token.value + "," + inherit_token.type, []))
+            ast_next = ast.children[-1]
         elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
