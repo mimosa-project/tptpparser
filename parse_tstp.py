@@ -10,6 +10,9 @@ from networkx.readwrite import json_graph
 #   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
 # 2. 子が二つ以上あるものは基本的に残す
 #   * NODE_MODIFICATION_RULEのkeyにノード名があるがvalueにkeyがないかどうかで判定
+#   * ：が使用されていて子が二つあるノードは別途関数で決め打ちし、子が二つ以上あるかどうかで判定
+#       * 付与するトークン情報が無く、常に子が二つ以上とは限らないため、NODE_MODIFICATION_RULEに含めれない
+#       * 子が二つ以上かどうかで判定すると方針3のものまで含めてしまうため決め打ちしている
 # 3. 子が二つ以上ある場合の内、ノードA : ノードB "," ノードAのように再帰が使用されているものは飛ばすそれ以外は残す
 #   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
 #       * ただし、例外的に残す場合は記述している(方針9)
@@ -59,8 +62,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "fof_and_formula": {"child": "AND_CONNECTIVE"}, "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
                           "fof_defined_infix_formula": {"child": "DEFINED_INFIX_PRED"}, "fof_sequent": {"child": "GENTZEN_ARROW"},
                           "disjunction": {"child": "VLINE"},
-                          "thf_apply_formula": {"child": "APPLY_SYMBOL"}, "thf_typed_variable": {"child": "："}, "thf_atom_typing": {"child": "："},
-                          "tff_typed_variable": {"child": "："}, "tff_atom_typing": {"child": "："}, "general_term": {"child": "："},
+                          "thf_apply_formula": {"child": "APPLY_SYMBOL"},
                           "tpi_annotated": {"child", "TPI"}, "thf_annotated": {"child": "THF"}, "tff_annotated": {"child", "TFF"}, "tcf_annotated": {"child": "TCH"},
                           "fof_annotated": {"child": "FOF"}, "cnf_annotated": {"child": "CNF"}, "thf_conditional": {"child": "DOLLAR_ITE"}, "thf_let": {"child": "DOLLAR_LET"},
                           "tfx_conditional": {"child": "DOLLAR_ITE"}, "tfx_let": {"child": "DOLLAR_LET"}, "include": {"child", "INCLUDE"}, "tf1_quantified_type": {"child": "TH1_QUANTIFIER"},
@@ -220,7 +222,7 @@ class ParseTstp():
         # すでに親ノードでトークンを付与しているなら抽象構文木に加えない(方針7)
         return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.type
 
-    def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
+    def __satisfy_node_remove_condition(self, cst, cst_parent_data):
         """__satisfy_node_remove_condition
 
         削除するノードかどうかを判定する関数
@@ -234,16 +236,21 @@ class ParseTstp():
                         tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
 
         Args:
-            cst_data(str): 具象構文木のノード名
+            cst(Tree): 具象構文木のノード
             cst_parent_data(str): 具象構文木の親のノード名
 
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
+        node_name_used_colon = {"thf_typed_variable", "thf_atom_typing",
+                                "tff_typed_variable", "tff_atom_typing", "general_term"}
+        # 子が二つ以上ある場合は残す(方針2)
+        is_used_colon = cst.data in node_name_used_colon and len(
+            cst.children) >= 2
         # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
         # ある文法導出に対して「括弧で括られている」ものは残す(方針4,9)
         # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
-        return not cst_data in NODE_MODIFICATION_RULE or not self.__satisfy_parent_condition(cst_data, cst_parent_data) and NODE_MODIFICATION_RULE[cst_data]
+        return not cst.data in NODE_MODIFICATION_RULE or not self.__satisfy_parent_condition(cst.data, cst_parent_data) and NODE_MODIFICATION_RULE[cst.data] and not is_used_colon
 
     def __get_children_from_rule(self, cst_data):
         """__get_children_from_rule
@@ -332,7 +339,7 @@ class ParseTstp():
             ast.children.append(
                 Tree(inherit_token.value + "," + inherit_token.type, []))
             ast_next = ast.children[-1]
-        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
+        elif not self.__satisfy_node_remove_condition(cst, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
         else:
