@@ -34,20 +34,24 @@ from networkx.readwrite import json_graph
 # 具象構文木から抽象構文木を構築するときにノードを作成するルール
 # key: 現在のノード（具象構文木）
 # value: {"parent": 親ノードの名前、"child": 削除する子ノードの名前}
-# 親ノードの名前(str): 親ノード名が文字列と等しければノードを作成する．Noneなら無条件で作成する。
+# 親ノードの名前(str or list): 親ノード名が文字列と等しければノードを作成する．Noneなら無条件で作成する。
+# 親ノードの名前はリストになることもある
 # 削除する子ノードの名前(str or list): 削除する子ノードの名前があるなら、子ノードの情報を付与する。
 # 削除する子ノードの名前はリストになることもある
 # parent, childが省略されているときはNoneとみなす
 NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}, "tff_logic_formula": {"parent": "tff_unitary_formula"},
                           "tff_atom_typing_list": {"parent": "tfx_let_types"}, "tfx_let_defn_list": {"parent": "tfx_let_defns"},
-                          "tff_logic_formula": {"parent": "tff_unitary_term"}, "tff_arguments": {"parent": "tfx_tuple"},
-                          "tff_mapping_type": {"parent": "tff_monotype"}, "tff_xprod_type": {"parent": "tff_unitary_type"},
+                          "tff_logic_formula": {"parent": ["tff_unitary_term", "tff_unitary_formula"]}, "tff_arguments": {"parent": "tfx_tuple"},
+                          "tff_mapping_type": {"parent": "tff_monotype", "child": "ARROW"}, "tff_xprod_type": {"parent": "tff_unitary_type", "child": "STAR"},
                           "tff_type_list": {"parent": "tfx_tuple_type"}, "fof_logic_formula": {"parent": "fof_unitary_formula"},
-                          "tff_variable_list": {"parent": "tff_quantified_formula"}, "fof_variable_list": {"parent": "fof_quantified_formula"},
-                          "tff_variable_list": {"parent": "tf1_quantified_type"}, "tff_variable_list": {"parent": "tcf_quantified_formula"},
+                          "tff_variable_list": {"parent": ["tff_quantified_formula", "tf1_quantified_type", "tcf_quantified_formula"]},
+                          "fof_variable_list": {"parent": "fof_quantified_formula"},
+                          "thf_formula": {"parent": "formula_data"}, "tff_formula": {"parent": "formula_data"},
+                          "fof_formula": {"parent": "formula_data"}, "cnf_formula": {"parent": "formula_data"},
+                          "fof_term": {"parent": "formula_data"},
                           "annotations": {}, "thf_quantified_formula": {}, "optional_info": {},
                           "thf_tuple": {}, "tfx_tuple": {}, "tfx_tuple_type": {}, "fof_formula_tuple": {},
-                          "formula_selection": {}, "general_list": {}, "thf_subtype": {},
+                          "formula_selection": {}, "general_list": {}, "thf_subtype": {"child": "SUBTYPE_SIGN"},
                           "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "thf_or_formula": {"child": "VLINE"},
                           "thf_and_formula": {"child": "AND_CONNECTIVE"}, "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
                           "thf_defined_infix": {"child": "DEFINED_INFIX_PRED"}, "thf_let_defn": {"child": "ASSIGNMENT"},
@@ -55,8 +59,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "thf_sequent": {"child": "GENTZEN_ARROW"},
                           "tff_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "tff_or_formula": {"child": "VLINE"},
                           "tff_and_formula": {"child": "AND_CONNECTIVE"}, "tff_infix_unary": {"child": "INFIX_INEQUALITY"},
-                          "tff_infix_unary": {"child": "INFIX_INEQUALITY"}, "tff_defined_infix": {"child": "DEFINED_INFIX_PRED"},
-                          "tfx_let_defn": {"child": "ASSIGNMENT"}, "tff_mapping_type": {"child": "ARROW"}, "tff_xprod_type": {"child": "STAR"},
+                          "tff_defined_infix": {"child": "DEFINED_INFIX_PRED"}, "tfx_let_defn": {"child": "ASSIGNMENT"},
                           "tff_subtype": {"child": "SUBTYPE_SIGN"}, "tfx_sequent": {"child": "GENTZEN_ARROW"},
                           "fof_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "fof_or_formula": {"child": "VLINE"},
                           "fof_and_formula": {"child": "AND_CONNECTIVE"}, "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
@@ -67,7 +70,8 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "fof_annotated": {"child": "FOF"}, "cnf_annotated": {"child": "CNF"}, "thf_conditional": {"child": "DOLLAR_ITE"}, "thf_let": {"child": "DOLLAR_LET"},
                           "tfx_conditional": {"child": "DOLLAR_ITE"}, "tfx_let": {"child": "DOLLAR_LET"}, "include": {"child": "INCLUDE"}, "tf1_quantified_type": {"child": "TH1_QUANTIFIER"},
                           "tcf_quantified_formula": {"child": "FOF_QUANTIFIER"},
-                          "thf_quantification": {"child": "THF_QUANTIFIER"}, "thf_prefix_unary": {"child": "UNARY_CONNECTIVE"},
+                          "thf_quantification": {"child": "THF_QUANTIFIER"}, "thf_variable_list": {"parent": "thf_quantification"},
+                          "thf_prefix_unary": {"child": "UNARY_CONNECTIVE"},
                           "thf_fof_function": {"child": ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]},
                           "tff_prefix_unary": {"child": "UNARY_CONNECTIVE"}, "tff_plain_atomic": {"child": "FUNCTOR"},
                           "tff_defined_plain": {"child": "DEFINED_FUNCTOR"}, "tff_system_atomic": {"child": "SYSTEM_FUNCTOR"},
@@ -76,9 +80,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "fof_system_term": {"child": "SYSTEM_FUNCTOR"}, "general_function": {"child": "ATOMIC_WORD"},
                           "literal": {"child": "UNARY_CONNECTIVE"}, "tff_quantified_formula": {"child": "FOF_QUANTIFIER"},
                           "fof_quantified_formula": {"child": "FOF_QUANTIFIER"},
-                          "thf_formula": {"parent": "formula_data", "child": "DOLLAR_THF"}, "tff_formula": {"parent": "formula_data", "child": "DOLLAR_TFF"},
-                          "fof_formula": {"parent": "formula_data", "child": "DOLLAR_FOF"}, "cnf_formula": {"parent": "formula_data", "child": "DOLLAR_CNF"},
-                          "fof_term": {"parent": "formula_data", "child": "DOLLAR_FOT"}}
+                          "formula_data": {"child": ["DOLLAR_THF", "DOLLAR_TFF", "DOLLAR_FOF", "DOLLAR_CNF", "DOLLAR_FOT"]}}
 
 
 class ParseTstp():
