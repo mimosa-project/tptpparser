@@ -297,21 +297,6 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
-    def __has_formula_parent(self, cst_parent_data):
-        """__has_formula_parent
-
-        親ノードのがformula_dataかどうかをboolで返す関数
-
-        Args:
-            cst_data(str): 具象構文木のノード名
-            cst_parent_data(str): 具象構文木の親のノード名
-
-        Returns:
-            (bool): 親ノードの条件がformula_dataならTrue、そうでないならFalse
-        """
-        # 親ノード名がformula_dataなら、括弧が使用されているため残し、トークン情報を付与する(方針4,6)
-        return cst_parent_data == "formula_data"
-
     def convert_cst2ast(self, cst, ast=None, cst_parent_data=None):
         """convert_cst2ast
 
@@ -335,7 +320,7 @@ class ParseTstp():
             return ast
 
         # これ以降は内部ノード
-        if self.__has_formula_parent(cst_parent_data) or self.__is_inherit_token_info(cst):
+        if self.__is_inherit_token_info(cst):
             # 上に上げるトークンは一つしか存在しないため、inherit_tokenの要素は一つしかない
             inherit_token = [child for child in cst.children if type(
                 child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]][0]
