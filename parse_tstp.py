@@ -189,7 +189,7 @@ class ParseTstp():
         Returns:
             (bool): 親ノードの条件を満たしているならTrueそうでないならFalse
         """
-        return cst_data in NODE_MODIFICATION_RULE and "parent" in NODE_MODIFICATION_RULE[cst_data] and NODE_MODIFICATION_RULE[cst_data]["parent"] == cst_parent_data
+        return cst_data in NODE_MODIFICATION_RULE and "parent" in NODE_MODIFICATION_RULE[cst_data] and cst_parent_data in NODE_MODIFICATION_RULE[cst_data]["parent"]
 
     def __satisfy_name_inherit_condition(self, cst_data):
         """__satisfy_name_inherit_condition
