@@ -222,7 +222,7 @@ class ParseTstp():
             (bool): 削除するならTrue、そうでないならFalse
         """
         # すでに親ノードでトークンを付与しているなら抽象構文木に加えない(方針7)
-        return self.__satisfy_name_inherit_condition(cst_parent_data) and NODE_MODIFICATION_RULE[cst_parent_data]["child"] == cst.type
+        return self.__satisfy_name_inherit_condition(cst_parent_data) and cst.type in NODE_MODIFICATION_RULE[cst_parent_data]["child"]
 
     def __satisfy_node_remove_condition(self, cst, cst_parent_data):
         """__satisfy_node_remove_condition
