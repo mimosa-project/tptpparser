@@ -51,6 +51,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "fof_term": {"parent": "formula_data"},
                           "annotations": {}, "thf_quantified_formula": {}, "optional_info": {},
                           "thf_tuple": {}, "tfx_tuple": {}, "tfx_tuple_type": {}, "fof_formula_tuple": {},
+                          "thf_typed_variable": {}, "thf_atom_typing": {}, "tff_typed_variable": {}, "tff_atom_typing": {},
                           "formula_selection": {}, "general_list": {}, "thf_subtype": {"child": "SUBTYPE_SIGN"},
                           "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "thf_or_formula": {"child": "VLINE"},
                           "thf_and_formula": {"child": "AND_CONNECTIVE"}, "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
@@ -224,7 +225,7 @@ class ParseTstp():
         # すでに親ノードでトークンを付与しているなら抽象構文木に加えない(方針7)
         return self.__satisfy_name_inherit_condition(cst_parent_data) and cst.type in NODE_MODIFICATION_RULE[cst_parent_data]["child"]
 
-    def __satisfy_node_remove_condition(self, cst, cst_parent_data):
+    def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
         """__satisfy_node_remove_condition
 
         削除するノードかどうかを判定する関数
@@ -238,22 +239,17 @@ class ParseTstp():
                         tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
 
         Args:
-            cst(Tree): 具象構文木のノード
+            cst_data(str): 具象構文木のノードの名前
             cst_parent_data(str): 具象構文木の親のノード名
 
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
-        node_name_used_colon = {"thf_typed_variable", "thf_atom_typing",
-                                "tff_typed_variable", "tff_atom_typing", "general_term"}
-        # 子が二つ以上ある場合は残す(方針2)
-        is_used_colon = cst.data in node_name_used_colon and len(
-            cst.children) >= 2
         # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
-        is_leave_unconditional = cst.data in NODE_MODIFICATION_RULE and not NODE_MODIFICATION_RULE[
-            cst.data]
+        is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE and not NODE_MODIFICATION_RULE[
+            cst_data]
         # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
-        return not cst.data in NODE_MODIFICATION_RULE and not is_used_colon or not self.__satisfy_parent_condition(cst.data, cst_parent_data) and not is_leave_unconditional
+        return not cst_data in NODE_MODIFICATION_RULE or (not self.__satisfy_parent_condition(cst_data, cst_parent_data) and not is_leave_unconditional)
 
     def __get_children_from_rule(self, cst_data):
         """__get_children_from_rule
@@ -327,7 +323,7 @@ class ParseTstp():
             ast.children.append(
                 Tree(inherit_token.value + "," + inherit_token.type, []))
             ast_next = ast.children[-1]
-        elif not self.__satisfy_node_remove_condition(cst, cst_parent_data):
+        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
             ast.children.append(Tree(cst.data, []))
             ast_next = ast.children[-1]
         else:
