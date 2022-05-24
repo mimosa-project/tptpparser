@@ -262,14 +262,12 @@ class ParseTstp():
         Returns:
             child_node_name_set(set): setにしたノード名の引継元
         """
-        if self.__satisfy_name_inherit_condition(cst_data) and type(NODE_MODIFICATION_RULE[cst_data]["child"]) == list:
-            child_node_name_set = set(
-                NODE_MODIFICATION_RULE[cst_data]["child"])
-        elif self.__satisfy_name_inherit_condition(cst_data):
-            child_node_name_set = set(
-                [NODE_MODIFICATION_RULE[cst_data]["child"]])
-        else:
-            child_node_name_set = set()
+        child_node_name_set = set()
+        if self.__satisfy_name_inherit_condition(cst_data):
+            children = NODE_MODIFICATION_RULE[cst_data]["child"]
+            if type(children) != list:
+                children = [children]
+            child_node_name_set.update(children)
         return child_node_name_set
 
     def __is_inherit_token_info(self, cst):
