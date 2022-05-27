@@ -291,10 +291,10 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
-    def convert_cst2ast(self, cst, ast=None, cst_parent_data=None):
-        """convert_cst2ast
+    def convert_cst2ast_on_lark(self, cst, ast=None, cst_parent_data=None):
+        """convert_cst2ast_on_lark
 
-        具象構文木から抽象構文木を作成する関数
+        具象構文木から抽象構文木を作成する関数(出力はlarkのTree型)
 
         Args:
             cst(Tree or Token): 具象構文木のノード
@@ -330,9 +330,60 @@ class ParseTstp():
             ast_next = ast
 
         for child in cst.children:
-            self.convert_cst2ast(child, ast_next, cst.data)
+            self.convert_cst2ast_on_lark(child, ast_next, cst.data)
 
         return ast
+
+    def convert_cst2ast_on_networkx(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_id=None):
+        """convert_cst2ast_on_networkx
+
+        具象構文木から抽象構文木を作成する関数
+
+        Args:
+            cst(Tree or Token): 具象構文木のノード
+            cst_parent_data(str): 具象構文木の親のノード名
+            ast_nodes(list): 抽象構文木のノード
+            ast_edges(list): 抽象構文木のエッジ
+            ast_id(int): 抽象構文木のノードID
+        Returns:
+            ast_nodes(list): 抽象構文木のノード
+            ast_edges(list): 抽象構文木のエッジ
+        """
+        if ast_nodes == None or ast_edges == None:
+            ast_nodes = list()
+            ast_edges = list()
+
+        # トークンの場合
+        if type(cst) != Tree:
+            if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
+                ast_edges.append([str(ast_id), str(len(ast_nodes))])
+                ast_nodes.append(
+                    (str(len(ast_nodes)), {"label": cst.value + "," + cst.type}))
+            return ast_nodes, ast_edges
+
+        # これ以降は内部ノード
+        if self.__is_inherit_token_info(cst):
+            for child in cst.children:
+                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
+                    # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
+                    inherit_token = child
+                    break
+            ast_edges.append([str(ast_id), str(len(ast_nodes))])
+            ast_nodes.append((str(len(ast_nodes)), {
+                             "label": inherit_token.value + "," + inherit_token.type}))
+            next_id = len(ast_nodes)-1
+        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
+            ast_edges.append([str(ast_id), str(len(ast_nodes))])
+            ast_nodes.append((str(len(ast_nodes)), {"label": cst.data}))
+            next_id = len(ast_nodes)-1
+        else:
+            next_id = ast_id
+        for child in cst.children:
+            # ast_edges.append([str(ast_id), str(len(ast_nodes)-1)])
+            self.convert_cst2ast_on_networkx(
+                child, cst.data, ast_nodes, ast_edges, next_id)
+        # 最初のエッジはNoneからのエッジなため除く
+        return ast_nodes, ast_edges[1:]
 
     def parse_tstp(self, tstp):
         """parse_tstp
@@ -437,10 +488,7 @@ class ParseTstp():
         with open(tstp_path, "r") as f:
             tstp = f.read()
         cst_root = self.parse_tstp(tstp)
-        ast_root = self.convert_cst2ast(cst_root)
-        graph_nodes = list()
-        graph_edges = list()
-        self.collect_digraph_data(ast_root, 0, graph_nodes, graph_edges)
+        graph_nodes, graph_edges = self.convert_cst2ast_on_networkx(cst_root)
         ast_graph = self.create_tree_graph_on_networkx(
             graph_nodes, graph_edges)
         json_root = json_graph.node_link_data(ast_graph)
