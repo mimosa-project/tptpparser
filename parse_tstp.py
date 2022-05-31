@@ -476,6 +476,137 @@ class ParseTstp():
         G.add_edges_from(graph_edges)
         return G
 
+    def __find_label_by_node_id(self, nodes, node_id):
+        """__find_label_by_node_id
+
+        networkxで作成した有向グラフのjsonのnodesから
+        ノードidと一致するノードのラベルを取得する関数
+
+        Args:
+            nodes(json): networkxで作成した有向グラフのjsonのndoes
+                nodesのフォーマット
+                    [
+                        {
+                            "label": ノードのラベル(str),
+                            "id": ノードid(str)
+                        },
+                        {
+                            "label": ノードのラベル(str),
+                            "id": ノードid(str)
+                        },...
+                    ]
+            node_id(str): ノードのid
+
+        Returns: 
+            label(str): ノードidと一致するノードのラベル
+        """
+        label = str()
+        for node in nodes:
+            if node["id"] == node_id:
+                label = node["label"]
+                # ノードidは重複しないためbreakする
+                break
+        return label
+
+    def __find_target_by_source(self, links, source):
+        """__find_target_by_source
+
+        networkxで作成した有向グラフのjsonのlinksから
+        sourceが一致するtargetを取得する関数
+
+        Args:
+            links(json): networkxで作成した有向グラフのjsonのlinks
+            linksのフォーマット:
+                [
+                    {
+                        "source": 始点のノードid(str),
+                        "target": 終点のノードid(str)
+                    },
+                    {
+                        "source": 始点のノードid(str),
+                        "target": 終点のノードid(str)
+                    },...
+                ]
+
+        Returns:
+            targets(str): 有向グラフのエッジの中で入力の始点が一致する終点のリスト
+        """
+        targets = list()
+        for link in links:
+            if link["source"] == source:
+                targets.append(link["target"])
+        return targets
+
+    def __get_assumption_formula_labels_on_networkx(self, nodes, links, annotations_id):
+        """__get_assumption_formula_labels_on_networkx
+
+        参照した式のラベルを返す関数
+
+        Args:
+            nodes(json): networkxで作成した有向グラフのjsonのndoes
+            links(json): networkxで作成した有向グラフのjsonのlinks
+            annotations_id(str): ノードのラベルがanntotationsのノードid
+
+        Returns:
+            assumption_formula_labels(list): 参照した式のラベルのリスト
+        """
+        assumption_formula_labels = list()
+        annotations_children = self.__find_target_by_source(
+            links, annotations_id)
+        if not annotations_children:
+            return assumption_formula_labels
+        if not "inference" in self.__find_label_by_node_id(nodes, annotations_children[0]):
+            return assumption_formula_labels
+        inference_children = self.__find_target_by_source(
+            links, annotations_children[0])
+        if not inference_children:
+            return assumption_formula_labels
+        inference_parents = inference_children[-1]
+        inference_parents_children = self.__find_target_by_source(
+            links, inference_parents)
+        for assumption_formula in inference_parents_children:
+            # ラベルは"value, type"となっておりその内valueのみ取得する
+            assumption_formula_label = self.__find_label_by_node_id(
+                nodes, assumption_formula).split(",")[0]
+            assumption_formula_labels.append(assumption_formula_label)
+
+        return assumption_formula_labels
+
+    def create_deduction_tree_graph_on_networkx(self, ast_path):
+        """create_deduction_tree_graph_on_networkx
+
+        抽象構文木から証明のグラフを作成する関数
+
+        Args:
+            ast_path(str): networkxで作成した抽象構文木のグラフ(json)のパス
+
+        Returns:
+            G(networkx.classes.digraph.DiGraph): エッジを追加したnetworkxのインスタンス
+        """
+        with open(ast_path, "r") as f:
+            ast = json.load(f)
+        ast_nodes = ast["nodes"]
+        ast_links = ast["links"]
+        graph_edges = list()
+        ast_top_children = self.__find_target_by_source(
+            ast_links, "0")
+
+        for formula_top in ast_top_children:
+            formula_top_children = self.__find_target_by_source(
+                ast_links, formula_top)
+            # ラベルは"value, type"となっておりその内valueのみ取得する
+            formula_label = self.__find_label_by_node_id(
+                ast_nodes, formula_top_children[0]).split(",")[0]
+            annotations_id = formula_top_children[-1]
+            assumption_formula_labels = self.__get_assumption_formula_labels_on_networkx(
+                ast_nodes, ast_links, annotations_id)
+            for assumption_formula_label in assumption_formula_labels:
+                graph_edges.append([assumption_formula_label, formula_label])
+
+        G = nx.DiGraph()
+        G.add_edges_from(graph_edges)
+        return G
+
     def convert_tstp2json(self, tstp_path, json_path):
         """convert_tstp2json
 
