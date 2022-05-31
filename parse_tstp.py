@@ -292,51 +292,8 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
-    def convert_cst2ast_on_lark(self, cst, ast=None, cst_parent_data=None):
-        """convert_cst2ast_on_lark
-
-        具象構文木から抽象構文木を作成する関数(出力はlarkのTree型)
-
-        Args:
-            cst(Tree or Token): 具象構文木のノード
-            ast(Tree): 抽象構文木のノード
-            cst_parent_data(str): 具象構文木の親のノード名
-
-        Returns:
-            ast(Tree): 最終的に作成される抽象構文木
-        """
-        if ast is None:
-            ast = Tree("tptp_root", [])
-
-        # トークンの場合
-        if type(cst) != Tree:
-            if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
-                ast.children.append(cst)
-            return ast
-
-        # これ以降は内部ノード
-        if self.__is_inherit_token_info(cst):
-            for child in cst.children:
-                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
-                    # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
-                    inherit_token = child
-                    break
-            ast.children.append(
-                Tree(inherit_token.value + "," + inherit_token.type, []))
-            ast_next = ast.children[-1]
-        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
-            ast.children.append(Tree(cst.data, []))
-            ast_next = ast.children[-1]
-        else:
-            ast_next = ast
-
-        for child in cst.children:
-            self.convert_cst2ast_on_lark(child, ast_next, cst.data)
-
-        return ast
-
-    def convert_cst2ast_on_networkx(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_id=None):
-        """convert_cst2ast_on_networkx
+    def convert_cst2ast(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_id=None):
+        """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
 
@@ -381,7 +338,7 @@ class ParseTstp():
             next_id = ast_id
         for child in cst.children:
             # ast_edges.append([str(ast_id), str(len(ast_nodes)-1)])
-            self.convert_cst2ast_on_networkx(
+            self.convert_cst2ast(
                 child, cst.data, ast_nodes, ast_edges, next_id)
         # 最初のエッジはNoneからのエッジなため除く
         return ast_nodes, ast_edges[1:]
