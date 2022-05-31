@@ -502,7 +502,7 @@ class ParseTstp():
         with open(tstp_path, "r") as f:
             tstp = f.read()
         cst_root = self.parse_tstp(tstp)
-        graph_nodes, graph_edges = self.convert_cst2ast_on_networkx(cst_root)
+        graph_nodes, graph_edges = self.convert_cst2ast(cst_root)
         ast_graph = self.create_tree_graph_on_networkx(
             graph_nodes, graph_edges)
         json_root = json_graph.node_link_data(ast_graph)
