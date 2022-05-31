@@ -49,6 +49,7 @@ NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}
                           "thf_formula": {"parent": "formula_data"}, "tff_formula": {"parent": "formula_data"},
                           "fof_formula": {"parent": "formula_data"}, "cnf_formula": {"parent": "formula_data"},
                           "fof_term": {"parent": "formula_data"},
+                          "tptp_root": {},
                           "annotations": {}, "thf_quantified_formula": {}, "optional_info": {},
                           "thf_tuple": {}, "tfx_tuple": {}, "tfx_tuple_type": {}, "fof_formula_tuple": {},
                           "thf_typed_variable": {}, "thf_atom_typing": {}, "tff_typed_variable": {}, "tff_atom_typing": {},
