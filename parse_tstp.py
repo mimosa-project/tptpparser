@@ -403,80 +403,6 @@ class ParseTstp():
 
         return cst_root
 
-    def __get_formula_label(self, ast_top):
-        """__get_formula_label
-
-        抽象構文木から導出された式のラベルを返す関数
-
-        Args:
-            ast_top (Tree): 抽象構文木の根の子
-
-        Returns:
-            formula_label (str): 導出された式のラベル
-        """
-        if not ast_top.children:
-            return ""
-        formula_label = ast_top.children[0].value
-        return formula_label
-
-    def __is_inference(self, annotations):
-        """__is_inference
-
-        annotationsの子にinferenceがあるかどうかをboolで返す関数
-
-        Args:
-            annotations (Tree): 抽象構文木のannotations部分のTree
-
-        Returns:
-            (bool): annotationsの子にinferenceがあるならTrue、そうでないならFalse
-        """
-        return annotations and "inference" in annotations[0].data
-
-    def __get_assumption_formula_labels(self, ast_top):
-        """__get_assumption_formula_labels
-
-        参照した式のラベルを返す関数
-
-        Args:
-            ast_top (Tree): 抽象構文木の根の子
-
-        Returns:
-            assumption_formula_labels (list): 参照した式のラベルのリスト
-        """
-        assumption_formula_labels = list()
-        if not ast_top.children and not ast_top.childlen[-1].children:
-            return assumption_formula_labels
-        annotations = ast_top.children[-1].children
-        if not self.__is_inference(annotations) or not annotations[0].children:
-            return assumption_formula_labels
-        inference_parents = annotations[0].children[-1].children
-        for inference_parent in inference_parents:
-            assumption_formula_label = inference_parent.value
-            assumption_formula_labels.append(assumption_formula_label)
-        return assumption_formula_labels
-
-    def create_deduction_tree_graph_on_networkx(self, ast_root):
-        """create_deduction_tree_graph_on_networkx
-
-        抽象構文木から証明のグラフを作成する関数
-
-        Args:
-            ast_root (Tree): 抽象構文木の根
-
-        Returns:
-            G(networkx.classes.digraph.DiGraph): エッジを追加したnetworkxのインスタンス
-        """
-        graph_edges = list()
-        for child in ast_root.children:
-            formula_label = self.__get_formula_label(child)
-            assumption_formula_labels = self.__get_assumption_formula_labels(
-                child)
-            for assumption_formula_label in assumption_formula_labels:
-                graph_edges.append([assumption_formula_label, formula_label])
-        G = nx.DiGraph()
-        G.add_edges_from(graph_edges)
-        return G
-
     def __find_label_by_node_id(self, nodes, node_id):
         """__find_label_by_node_id
 
@@ -538,9 +464,8 @@ class ParseTstp():
                 targets.append(link["target"])
         return targets
 
-    def __get_assumption_formula_labels_on_networkx(self, nodes, links, annotations_id):
-        """__get_assumption_formula_labels_on_networkx
-
+    def __get_assumption_formula_labels(self, nodes, links, annotations_id):
+        """__get_assumption_formula_labels
         参照した式のラベルを返す関数
 
         Args:
@@ -599,7 +524,7 @@ class ParseTstp():
             formula_label = self.__find_label_by_node_id(
                 ast_nodes, formula_top_children[0]).split(",")[0]
             annotations_id = formula_top_children[-1]
-            assumption_formula_labels = self.__get_assumption_formula_labels_on_networkx(
+            assumption_formula_labels = self.__get_assumption_formula_labels(
                 ast_nodes, ast_links, annotations_id)
             for assumption_formula_label in assumption_formula_labels:
                 graph_edges.append([assumption_formula_label, formula_label])
