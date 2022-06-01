@@ -410,6 +410,7 @@ class ParseTstp():
                         "target": 終点のノードid(str)
                     },...
                 ]
+            source(str): 有向グラフの始点 
 
         Returns:
             targets(str): 有向グラフのエッジの中で入力の始点が一致する終点のリスト
