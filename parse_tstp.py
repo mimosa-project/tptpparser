@@ -413,7 +413,7 @@ class ParseTstp():
             source(str): 有向グラフの始点 
 
         Returns:
-            targets(str): 有向グラフのエッジの中で入力の始点が一致する終点のリスト
+            targets(list): 有向グラフのエッジの中で入力の始点が一致する終点のリスト
         """
         targets = list()
         for link in links:
