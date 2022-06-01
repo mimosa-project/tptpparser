@@ -292,7 +292,7 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
-    def convert_cst2ast(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_id=None):
+    def convert_cst2ast(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_parent_id=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -302,7 +302,7 @@ class ParseTstp():
             cst_parent_data(str): 具象構文木の親のノード名
             ast_nodes(list): 抽象構文木のノード
             ast_edges(list): 抽象構文木のエッジ
-            ast_id(int): 抽象構文木のノードID
+            ast_parent_id(int): 抽象構文木の親ノードID
         Returns:
             ast_nodes(list): 抽象構文木のノード
             ast_edges(list): 抽象構文木のエッジ
@@ -314,7 +314,7 @@ class ParseTstp():
         # トークンの場合
         if type(cst) != Tree:
             if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
-                ast_edges.append([str(ast_id), str(len(ast_nodes))])
+                ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
                 ast_nodes.append(
                     (str(len(ast_nodes)), {"label": cst.value + "," + cst.type}))
             return ast_nodes, ast_edges
@@ -326,20 +326,19 @@ class ParseTstp():
                     # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
                     inherit_token = child
                     break
-            ast_edges.append([str(ast_id), str(len(ast_nodes))])
+            ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
             ast_nodes.append((str(len(ast_nodes)), {
                              "label": inherit_token.value + "," + inherit_token.type}))
-            next_id = len(ast_nodes)-1
+            ast_parent_id_next = len(ast_nodes)-1
         elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
-            ast_edges.append([str(ast_id), str(len(ast_nodes))])
+            ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
             ast_nodes.append((str(len(ast_nodes)), {"label": cst.data}))
-            next_id = len(ast_nodes)-1
+            ast_parent_id_next = len(ast_nodes)-1
         else:
-            next_id = ast_id
+            ast_parent_id_next = ast_parent_id
         for child in cst.children:
-            # ast_edges.append([str(ast_id), str(len(ast_nodes)-1)])
             self.convert_cst2ast(
-                child, cst.data, ast_nodes, ast_edges, next_id)
+                child, cst.data, ast_nodes, ast_edges, ast_parent_id_next)
         # 最初のエッジはNoneからのエッジなため除く
         return ast_nodes, ast_edges[1:]
 
