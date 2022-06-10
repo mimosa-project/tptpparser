@@ -405,14 +405,14 @@ class ParseTstp():
 
         return cst_root
 
-    def __find_label_by_node_id(self, nodes, node_id):
-        """__find_label_by_node_id
+    def __create_node_id2label(self, ast_nodes):
+        """__create_node_id2label
 
-        networkxで作成した有向グラフのjsonのnodesから
-        ノードidと一致するノードのラベルを取得する関数
+        networkxで作成した有向グラフのjsonのnodesから、
+        ノードIDをkeyとして、ラベルをvalueとしたdictを作成し、それを返す関数
 
         Args:
-            nodes(json): networkxで作成した有向グラフのjsonのndoes
+            ast_nodes (json): networkxで作成した有向グラフのjsonのndoes
                 nodesのフォーマット
                     [
                         {
@@ -424,79 +424,78 @@ class ParseTstp():
                             "id": ノードid(str)
                         },...
                     ]
-            node_id(str): ノードのid
-
-        Returns: 
-            label(str): ノードidと一致するノードのラベル
-        """
-        label = str()
-        for node in nodes:
-            if node["id"] == node_id:
-                label = node["label"]
-                # ノードidは重複しないためbreakする
-                break
-        return label
-
-    def __find_target_by_source(self, links, source):
-        """__find_target_by_source
-
-        networkxで作成した有向グラフのjsonのlinksから
-        sourceが一致するtargetを取得する関数
-
-        Args:
-            links(json): networkxで作成した有向グラフのjsonのlinks
-            linksのフォーマット:
-                [
-                    {
-                        "source": 始点のノードid(str),
-                        "target": 終点のノードid(str)
-                    },
-                    {
-                        "source": 始点のノードid(str),
-                        "target": 終点のノードid(str)
-                    },...
-                ]
-            source(str): 有向グラフの始点 
 
         Returns:
-            targets(list): 有向グラフのエッジの中で入力の始点が一致する終点のリスト
+            node_id2label(dict): idをkey、labelをvalueとしたdict
         """
-        targets = list()
-        for link in links:
-            if link["source"] == source:
-                targets.append(link["target"])
-        return targets
+        node_id2label = dict()
+        for node in ast_nodes:
+            ast_node_id = node["id"]
+            label = node["label"]
+            node_id2label[ast_node_id] = label
+        return node_id2label
 
-    def __get_assumption_formula_labels(self, nodes, links, annotations_id):
+    def __create_source2target(self, ast_links):
+        """__create_source2target
+
+        networkxで作成した有向グラフのjsonのlinksから、
+        始点をkeyとして終点のリストをvalueとしたdictを作成し、それを返す関数
+
+        Args:
+            ast_links (json): networkxで作成した有向グラフのjsonのlinks
+                ast_linksのフォーマット:
+                    [
+                        {
+                            "source": 始点のノードid(str),
+                            "target": 終点のノードid(str)
+                        },
+                        {
+                            "source": 始点のノードid(str),
+                            "target": 終点のノードid(str)
+                        },...
+                    ]
+
+        Returns:
+            source2target(dict): sourceをkey、targetのリストをvalueとしたdict
+        """
+        source2target = dict()
+        for link in ast_links:
+            source = link["source"]
+            target = link["target"]
+            if source in source2target.keys():
+                source2target[source].append(target)
+            else:
+                source2target[source] = [target]
+        return source2target
+
+    def __get_assumption_formula_labels(self, node_id2label, source2target, annotations_id):
         """__get_assumption_formula_labels
+
         参照した式のラベルを返す関数
 
         Args:
-            nodes(json): networkxで作成した有向グラフのjsonのndoes
-            links(json): networkxで作成した有向グラフのjsonのlinks
+            node_id2label(dict): idをkey、labelをvalueとしたdict
+            source2target(dict): sourceをkey、targetのリストをvalueとしたdict
             annotations_id(str): ノードのラベルがanntotationsのノードid
 
         Returns:
             assumption_formula_labels(list): 参照した式のラベルのリスト
         """
         assumption_formula_labels = list()
-        annotations_children = self.__find_target_by_source(
-            links, annotations_id)
+        annotations_children = source2target[annotations_id]
         if not annotations_children:
             return assumption_formula_labels
-        if not "inference" in self.__find_label_by_node_id(nodes, annotations_children[0]):
+        if not "inference" in node_id2label[annotations_children[0]]:
             return assumption_formula_labels
-        inference_children = self.__find_target_by_source(
-            links, annotations_children[0])
+        inference_children = source2target[annotations_children[0]]
         if not inference_children:
             return assumption_formula_labels
         inference_parents = inference_children[-1]
-        inference_parents_children = self.__find_target_by_source(
-            links, inference_parents)
+        inference_parents_children = source2target[inference_parents]
         for assumption_formula in inference_parents_children:
             # ラベルは"value, type"となっておりその内valueのみ取得する
-            assumption_formula_label = self.__find_label_by_node_id(
-                nodes, assumption_formula).split(",")[0]
+            assumption_formula_label = node_id2label[assumption_formula].split(",")[
+                0]
             assumption_formula_labels.append(assumption_formula_label)
 
         return assumption_formula_labels
@@ -516,19 +515,19 @@ class ParseTstp():
             ast = json.load(f)
         ast_nodes = ast["nodes"]
         ast_links = ast["links"]
+        source2target = self.__create_source2target(ast_links)
+        node_id2label = self.__create_node_id2label(ast_nodes)
         graph_edges = list()
-        ast_top_children = self.__find_target_by_source(
-            ast_links, "0")
+        ast_top_children = source2target["0"]
 
         for formula_top in ast_top_children:
-            formula_top_children = self.__find_target_by_source(
-                ast_links, formula_top)
+            formula_top_children = source2target[formula_top]
             # ラベルは"value, type"となっておりその内valueのみ取得する
-            formula_label = self.__find_label_by_node_id(
-                ast_nodes, formula_top_children[0]).split(",")[0]
+            formula_label = node_id2label[formula_top_children[0]].split(",")[
+                0]
             annotations_id = formula_top_children[-1]
             assumption_formula_labels = self.__get_assumption_formula_labels(
-                ast_nodes, ast_links, annotations_id)
+                node_id2label, source2target, annotations_id)
             for assumption_formula_label in assumption_formula_labels:
                 graph_edges.append([assumption_formula_label, formula_label])
 
