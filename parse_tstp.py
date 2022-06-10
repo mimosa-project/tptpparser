@@ -292,6 +292,58 @@ class ParseTstp():
         # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
         return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
 
+    def __add_ast_node(self, ast_nodes, cst, ast_next_parent_id):
+        """__add_ast_node
+
+        抽象構文木のノードを追加する関数
+
+        Args:
+            ast_nodes (list):
+                作成する抽象構文木のノードリスト
+            cst (Tree or Token):
+                抽象構文木に加える具象構文木のノード
+            ast_next_parent_id (int):
+                次作成する抽象構文木のノードID
+        """
+        if type(cst) == Tree:
+            ast_nodes.append((str(ast_next_parent_id), {"label": cst.data}))
+        else:
+            ast_nodes.append(
+                (str(ast_next_parent_id), {"label": cst.value + "," + cst.type}))
+        return
+
+    def __add_ast_edge(self, ast_edges, ast_parent_id, ast_next_parent_id):
+        """__add_ast_edge
+
+        抽象構文木のノードとエッジを追加する関数
+
+        Args:
+            ast_edges (list):
+                作成する抽象構文木のエッジリスト
+            ast_parent_id (int):
+                抽象構文木の親ノードID
+            ast_next_parent_id (int):
+                次作成する抽象構文木のノードID
+        """
+        if ast_parent_id == None:
+            return
+        ast_edges.append([str(ast_parent_id), str(ast_next_parent_id)])
+        return
+
+    def __satisfy_child_token_inherit_condition(self, cst_data, cst_child):
+        """__satisfy_child_token_inherit_condition
+
+        具象構文木の子のトークンを上に上げて子のトークンを継承するかどうか判定する関数
+
+        Args:
+            cst_data (str): 具象構文木のノード名
+            cst_child (Tree or Token): 具象構文木の子ノード
+
+        Returns:
+            (bool): 具象構文木の子のトークンを上に上げるならTrue、そうでないならFalse
+        """
+        return self.__satisfy_name_inherit_condition(cst_data) and type(cst_child) == Token and cst_child.type in NODE_MODIFICATION_RULE[cst_data]["child"]
+
     def convert_cst2ast(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_parent_id=None):
         """convert_cst2ast
 
@@ -310,37 +362,31 @@ class ParseTstp():
         if ast_nodes == None or ast_edges == None:
             ast_nodes = list()
             ast_edges = list()
-
+        ast_next_parent_id = len(ast_nodes)
         # トークンの場合
         if type(cst) != Tree:
             if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
-                ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
-                ast_nodes.append(
-                    (str(len(ast_nodes)), {"label": cst.value + "," + cst.type}))
+                self.__add_ast_node(ast_nodes, cst, ast_next_parent_id)
+                self.__add_ast_edge(
+                    ast_edges, ast_parent_id, ast_next_parent_id)
             return ast_nodes, ast_edges
 
         # これ以降は内部ノード
-        if self.__is_inherit_token_info(cst):
+        if self.__is_inherit_token_info(cst) or not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
+            inherit_node = cst
             for child in cst.children:
-                if type(child) == Token and child.type in NODE_MODIFICATION_RULE[cst.data]["child"]:
+                if self.__satisfy_child_token_inherit_condition(cst.data, child):
                     # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
-                    inherit_token = child
+                    inherit_node = child
                     break
-            ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
-            ast_nodes.append((str(len(ast_nodes)), {
-                             "label": inherit_token.value + "," + inherit_token.type}))
-            ast_parent_id_next = len(ast_nodes)-1
-        elif not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
-            ast_edges.append([str(ast_parent_id), str(len(ast_nodes))])
-            ast_nodes.append((str(len(ast_nodes)), {"label": cst.data}))
-            ast_parent_id_next = len(ast_nodes)-1
+            self.__add_ast_node(ast_nodes, inherit_node, ast_next_parent_id)
+            self.__add_ast_edge(ast_edges, ast_parent_id, ast_next_parent_id)
         else:
-            ast_parent_id_next = ast_parent_id
+            ast_next_parent_id = ast_parent_id
         for child in cst.children:
             self.convert_cst2ast(
-                child, cst.data, ast_nodes, ast_edges, ast_parent_id_next)
-        # 最初のエッジはNoneからのエッジなため除く
-        return ast_nodes, ast_edges[1:]
+                child, cst.data, ast_nodes, ast_edges, ast_next_parent_id)
+        return ast_nodes, ast_edges
 
     def parse_tstp(self, tstp):
         """parse_tstp
