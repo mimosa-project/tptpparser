@@ -3,33 +3,33 @@ from graphviz import Digraph
 from lark import Lark, Tree, Token
 import networkx as nx
 from networkx.readwrite import json_graph
-
+from collections import defaultdict
 
 # 方針
 # 1. 基本的に子が一つしかなく記号などを含んでいない場合は飛ばす
-#   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があるかどうかで判定
 # 2. 子が二つ以上あるものは基本的に残す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があるがvalueにkeyがないかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があるがvalueにkeyがないかどうかで判定
 #   * ：が使用されていて子が二つあるノードは別途関数で決め打ちし、子が二つ以上あるかどうかで判定
-#       * 付与するトークン情報が無く、常に子が二つ以上とは限らないため、NODE_MODIFICATION_RULEに含めれない
+#       * 付与するトークン情報が無く、常に子が二つ以上とは限らないため、NODE_KEEP_RULEに含めれない
 #       * 子が二つ以上かどうかで判定すると方針3のものまで含めてしまうため決め打ちしている
 # 3. 子が二つ以上ある場合の内、ノードA : ノードB "," ノードAのように再帰が使用されているものは飛ばすそれ以外は残す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があるかどうかで判定
 #       * ただし、例外的に残す場合は記述している(方針9)
 # 4. ノード名 : ノード名 |...| "(" ノード名 ")" or "[" ノード名 "]"が親ノードで子が"(" ノード名 ")" or "[" ノード名 "]"のときの子ノードは残す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のparent(key)のvalueと親ノード名が一致するかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があり、value(map)のparent(key)のvalueと親ノード名が一致するかどうかで判定
 # 5. thf_atom_typing : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
-#   * NODE_MODIFICATION_RULEのkeyにノード名があるかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があるかどうかで判定
 # 6. ノード名 トークン(+など)or記号(@など) ノード名、記号"("ノード名...")"、 トークン"("ノード名...")"、 トークン ノード名...となっている場合はそのノードにトークン、記号の情報を付与する
 #    このとき、付与したトークンは消す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
 # 7. 親ノードにトークン情報が付与されていないトークンは残す
 #   * 方針6のトークンでないかどうかで判定
 # 8. tf1_quantified_type : "!>" "[" tff_variable_list "]" ":" tff_monotypeや、
 #    tcf_quantified_formula : "!" "[" tff_variable_list "]" ":" cnf_formulaのように
 #    文字列 or トークン"[" ノード名 "]" ":" ノード名となっている場合は、文字列、トークン情報を付与する
 #    このとき、付与したトークンは消す
-#   * NODE_MODIFICATION_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
+#   * NODE_KEEP_RULEのkeyにノード名があり、value(map)のchild(key)のvalueと子のトークン名が一致するかどうかで判定
 
 # 具象構文木から抽象構文木を構築するときにノードを作成するルール
 # key: 現在のノード（具象構文木）
@@ -39,50 +39,101 @@ from networkx.readwrite import json_graph
 # 削除する子ノードの名前(str or list): 削除する子ノードの名前があるなら、子ノードの情報を付与する。
 # 削除する子ノードの名前はリストになることもある
 # parent, childが省略されているときはNoneとみなす
-NODE_MODIFICATION_RULE = {"thf_logic_formula": {"parent": "thf_unitary_formula"}, "tff_logic_formula": {"parent": "tff_unitary_formula"},
-                          "tff_atom_typing_list": {"parent": "tfx_let_types"}, "tfx_let_defn_list": {"parent": "tfx_let_defns"},
-                          "tff_logic_formula": {"parent": ["tff_unitary_term", "tff_unitary_formula"]}, "tff_arguments": {"parent": "tfx_tuple"},
-                          "tff_mapping_type": {"parent": "tff_monotype", "child": "ARROW"}, "tff_xprod_type": {"parent": "tff_unitary_type", "child": "STAR"},
-                          "tff_type_list": {"parent": "tfx_tuple_type"}, "fof_logic_formula": {"parent": "fof_unitary_formula"},
-                          "tff_variable_list": {"parent": ["tff_quantified_formula", "tf1_quantified_type", "tcf_quantified_formula"]},
-                          "fof_variable_list": {"parent": "fof_quantified_formula"},
-                          "thf_formula": {"parent": "formula_data"}, "tff_formula": {"parent": "formula_data"},
-                          "fof_formula": {"parent": "formula_data"}, "cnf_formula": {"parent": "formula_data"},
-                          "fof_term": {"parent": "formula_data"},
-                          "tptp_root": {},
-                          "annotations": {}, "thf_quantified_formula": {}, "optional_info": {},
-                          "thf_tuple": {}, "tfx_tuple": {}, "tfx_tuple_type": {}, "fof_formula_tuple": {},
-                          "thf_typed_variable": {}, "thf_atom_typing": {}, "tff_typed_variable": {}, "tff_atom_typing": {},
-                          "formula_selection": {}, "general_list": {}, "thf_subtype": {"child": "SUBTYPE_SIGN"},
-                          "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "thf_or_formula": {"child": "VLINE"},
-                          "thf_and_formula": {"child": "AND_CONNECTIVE"}, "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
-                          "thf_defined_infix": {"child": "DEFINED_INFIX_PRED"}, "thf_let_defn": {"child": "ASSIGNMENT"},
-                          "thf_mapping_type": {"child": "ARROW"}, "thf_xprod_type": {"child": "STAR"}, "thf_union_type": {"child": "PLUS"},
-                          "thf_sequent": {"child": "GENTZEN_ARROW"},
-                          "tff_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "tff_or_formula": {"child": "VLINE"},
-                          "tff_and_formula": {"child": "AND_CONNECTIVE"}, "tff_infix_unary": {"child": "INFIX_INEQUALITY"},
-                          "tff_defined_infix": {"child": "DEFINED_INFIX_PRED"}, "tfx_let_defn": {"child": "ASSIGNMENT"},
-                          "tff_subtype": {"child": "SUBTYPE_SIGN"}, "tfx_sequent": {"child": "GENTZEN_ARROW"},
-                          "fof_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"}, "fof_or_formula": {"child": "VLINE"},
-                          "fof_and_formula": {"child": "AND_CONNECTIVE"}, "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
-                          "fof_defined_infix_formula": {"child": "DEFINED_INFIX_PRED"}, "fof_sequent": {"child": "GENTZEN_ARROW"},
-                          "disjunction": {"child": "VLINE"},
-                          "thf_apply_formula": {"child": "APPLY_SYMBOL"},
-                          "tpi_annotated": {"child": "TPI"}, "thf_annotated": {"child": "THF"}, "tff_annotated": {"child": "TFF"}, "tcf_annotated": {"child": "TCH"},
-                          "fof_annotated": {"child": "FOF"}, "cnf_annotated": {"child": "CNF"}, "thf_conditional": {"child": "DOLLAR_ITE"}, "thf_let": {"child": "DOLLAR_LET"},
-                          "tfx_conditional": {"child": "DOLLAR_ITE"}, "tfx_let": {"child": "DOLLAR_LET"}, "include": {"child": "INCLUDE"}, "tf1_quantified_type": {"child": "TH1_QUANTIFIER"},
-                          "tcf_quantified_formula": {"child": "FOF_QUANTIFIER"},
-                          "thf_quantification": {"child": "THF_QUANTIFIER"}, "thf_variable_list": {"parent": "thf_quantification"},
-                          "thf_prefix_unary": {"child": "UNARY_CONNECTIVE"},
-                          "thf_fof_function": {"child": ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]},
-                          "tff_prefix_unary": {"child": "UNARY_CONNECTIVE"}, "tff_plain_atomic": {"child": "FUNCTOR"},
-                          "tff_defined_plain": {"child": "DEFINED_FUNCTOR"}, "tff_system_atomic": {"child": "SYSTEM_FUNCTOR"},
-                          "tff_atomic_type": {"child": "TYPE_FUNCTOR"}, "fof_unary_formula": {"child": "UNARY_CONNECTIVE"},
-                          "fof_plain_term": {"child": "FUNCTOR"}, "fof_defined_plain_term": {"child": "DEFINED_FUNCTOR"},
-                          "fof_system_term": {"child": "SYSTEM_FUNCTOR"}, "general_function": {"child": "ATOMIC_WORD"},
-                          "literal": {"child": "UNARY_CONNECTIVE"}, "tff_quantified_formula": {"child": "FOF_QUANTIFIER"},
-                          "fof_quantified_formula": {"child": "FOF_QUANTIFIER"},
-                          "formula_data": {"child": ["DOLLAR_THF", "DOLLAR_TFF", "DOLLAR_FOF", "DOLLAR_CNF", "DOLLAR_FOT"]}}
+NODE_KEEP_RULE = {
+    # with no condition (leave always)
+    "annotations": {},
+    "fof_formula_tuple": {},
+    "formula_selection": {},
+    "general_list": {},
+    "optional_info": {},
+    "tff_atom_typing": {},
+    "tff_typed_variable": {},
+    "tfx_tuple": {},
+    "tfx_tuple_type": {},
+    "tptp_root": {},
+    "thf_atom_typing": {},
+    "thf_quantified_formula": {},
+    "thf_tuple": {},
+    "thf_typed_variable": {},
+    # with parent condition
+    "cnf_formula": {"parent": "formula_data"},
+    "fof_formula": {"parent": "formula_data"},
+    "fof_logic_formula": {"parent": "fof_unitary_formula"},
+    "fof_term": {"parent": "formula_data"},
+    "fof_variable_list": {"parent": "fof_quantified_formula"},
+    "tff_arguments": {"parent": "tfx_tuple"},
+    "tff_atom_typing_list": {"parent": "tfx_let_types"},
+    "tff_formula": {"parent": "formula_data"},
+    "tff_logic_formula": {"parent": "tff_unitary_formula"},
+    "tff_logic_formula": {"parent": ["tff_unitary_term", "tff_unitary_formula"]},
+    "tff_type_list": {"parent": "tfx_tuple_type"},
+    "tff_variable_list": {"parent": ["tff_quantified_formula", "tf1_quantified_type", "tcf_quantified_formula"]},
+    "tfx_let_defn_list": {"parent": "tfx_let_defns"},
+    "thf_formula": {"parent": "formula_data"},
+    "thf_logic_formula": {"parent": "thf_unitary_formula"},
+    "thf_variable_list": {"parent": "thf_quantification"},
+    # with child condition
+    "cnf_annotated": {"child": "CNF"},
+    "disjunction": {"child": "VLINE"},
+    "fof_and_formula": {"child": "AND_CONNECTIVE"},
+    "fof_annotated": {"child": "FOF"},
+    "fof_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
+    "fof_defined_infix_formula": {"child": "DEFINED_INFIX_PRED"},
+    "fof_defined_plain_term": {"child": "DEFINED_FUNCTOR"},
+    "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
+    "fof_or_formula": {"child": "VLINE"},
+    "fof_plain_term": {"child": "FUNCTOR"},
+    "fof_quantified_formula": {"child": "FOF_QUANTIFIER"},
+    "fof_sequent": {"child": "GENTZEN_ARROW"},
+    "fof_system_term": {"child": "SYSTEM_FUNCTOR"},
+    "fof_unary_formula": {"child": "UNARY_CONNECTIVE"},
+    "formula_data": {"child": ["DOLLAR_THF", "DOLLAR_TFF", "DOLLAR_FOF", "DOLLAR_CNF", "DOLLAR_FOT"]},
+    "general_function": {"child": "ATOMIC_WORD"},
+    "include": {"child": "INCLUDE"},
+    "literal": {"child": "UNARY_CONNECTIVE"},
+    "tcf_annotated": {"child": "TCH"},
+    "tcf_quantified_formula": {"child": "FOF_QUANTIFIER"},
+    "tff_and_formula": {"child": "AND_CONNECTIVE"},
+    "tff_annotated": {"child": "TFF"},
+    "tff_atomic_type": {"child": "TYPE_FUNCTOR"},
+    "tff_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
+    "tff_defined_infix": {"child": "DEFINED_INFIX_PRED"},
+    "tff_defined_plain": {"child": "DEFINED_FUNCTOR"},
+    "tff_infix_unary": {"child": "INFIX_INEQUALITY"},
+    "tfx_let_defn": {"child": "ASSIGNMENT"},
+    "tff_or_formula": {"child": "VLINE"},
+    "tff_plain_atomic": {"child": "FUNCTOR"},
+    "tff_prefix_unary": {"child": "UNARY_CONNECTIVE"},
+    "tff_quantified_formula": {"child": "FOF_QUANTIFIER"},
+    "tff_subtype": {"child": "SUBTYPE_SIGN"},
+    "tff_system_atomic": {"child": "SYSTEM_FUNCTOR"},
+    "tfx_conditional": {"child": "DOLLAR_ITE"},
+    "tfx_let": {"child": "DOLLAR_LET"},
+    "tfx_sequent": {"child": "GENTZEN_ARROW"},
+    "tf1_quantified_type": {"child": "TH1_QUANTIFIER"},
+    "thf_and_formula": {"child": "AND_CONNECTIVE"},
+    "thf_annotated": {"child": "THF"},
+    "thf_apply_formula": {"child": "APPLY_SYMBOL"},
+    "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
+    "thf_conditional": {"child": "DOLLAR_ITE"},
+    "thf_defined_infix": {"child": "DEFINED_INFIX_PRED"},
+    "thf_fof_function": {"child": ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]},
+    "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
+    "thf_let": {"child": "DOLLAR_LET"},
+    "thf_let_defn": {"child": "ASSIGNMENT"},
+    "thf_mapping_type": {"child": "ARROW"},
+    "thf_or_formula": {"child": "VLINE"},
+    "thf_prefix_unary": {"child": "UNARY_CONNECTIVE"},
+    "thf_quantification": {"child": "THF_QUANTIFIER"},
+    "thf_subtype": {"child": "SUBTYPE_SIGN"},
+    "thf_sequent": {"child": "GENTZEN_ARROW"},
+    "thf_union_type": {"child": "PLUS"},
+    "thf_xprod_type": {"child": "STAR"},
+    "tpi_annotated": {"child": "TPI"},
+    # with both condition
+    "tff_mapping_type": {"parent": "tff_monotype", "child": "ARROW"},
+    "tff_xprod_type": {"parent": "tff_unitary_type", "child": "STAR"},
+}
 
 
 class ParseTstp():
@@ -91,11 +142,19 @@ class ParseTstp():
     tstpファイルをjson形式に保存するためのクラス
 
     Attributes:
-        lark_path (str): 使用するtptp文法ファイルのパス
+        grammar_path (str): 使用するtptp文法ファイルのパス
     """
 
-    def __init__(self, lark_path):
-        self.lark_path = lark_path
+    def __init__(self, grammar_path):
+        self.grammar_path = grammar_path
+
+    def get_node_label(self, node):
+        if node is None:
+            return None
+        if type(node) == Tree:
+            return node.data
+        else:
+            return node.value + "," + node.type
 
     def collect_digraph_data(self, node, node_id, graph_nodes, graph_edges):
         """collect_digraph_data
@@ -108,12 +167,9 @@ class ParseTstp():
             graph_nodes (list): グラフのノードの集合
             graph_edges (list): グラフのエッジの集合
         """
-        if type(node) == Tree:
-            graph_nodes.append(
-                (str(len(graph_nodes)), {"label": node.data}))
-        else:
-            graph_nodes.append(
-                (str(len(graph_nodes)), {"label": node.value + "," + node.type}))
+        graph_nodes.append(str(len(graph_nodes)), {
+                           "label": self.get_node_label(node)})
+        if type(node) == Token:
             return
 
         for child in node.children:
@@ -179,58 +235,64 @@ class ParseTstp():
         agraph = nx.nx_agraph.to_agraph(G)
         agraph.draw(path, prog="dot", format="png")
 
-    def __satisfy_parent_condition(self, cst_data, cst_parent_data):
+    def __satisfy_parent_condition(self, node_name, parent_node_name):
         """__satisfy_parent_condition
 
-        NODE_MODIFICATION_RULEの親ノードの条件を満たしているかどうかをboolで返す関数
+        NODE_KEEP_RULEの親ノードの条件を満たしているかどうかをboolで返す関数
 
         Args:
-            cst_data(str): 具象構文木のノード名
-            cst_parent_data(str): 具象構文木の親のノード名
+            node_name(str): 具象構文木のノード名
+            parent_node_name(str): 具象構文木の親のノード名
 
         Returns:
             (bool): 親ノードの条件を満たしているならTrueそうでないならFalse
         """
-        return cst_data in NODE_MODIFICATION_RULE and "parent" in NODE_MODIFICATION_RULE[cst_data] and cst_parent_data in NODE_MODIFICATION_RULE[cst_data]["parent"]
+        return (node_name in NODE_KEEP_RULE and
+                "parent" in NODE_KEEP_RULE[node_name] and
+                parent_node_name in NODE_KEEP_RULE[node_name]["parent"])
 
-    def __satisfy_name_inherit_condition(self, cst_data):
-        """__satisfy_name_inherit_condition
+    def __is_exist_child_condition(self, node_name):
+        """__is_exist_child_condition
 
-        NODE_MODIFICATION_RULEの作成するノード名の引継元があるかどうかをboolで返す関数
-        NODE_MODIFICATION_RULEでparentが一致しているかどうかは関数外で確認する
+        NODE_KEEP_RULEにchildが存在するかを確認する
+        この条件を満たすchildノードが存在すると
+        本ノードがchildノードの名前を引き継いだ後にchildノードは削除される
+        NODE_KEEP_RULEでparentが一致しているかどうかは確認しない
 
         Args:
-            cst_data(str): 具象構文木のノード名
+            node_name(str): 具象構文木のノード名
 
         Returns:
             (bool): 作成するノード名の引継元があるならTrueそうでないならFalse
         """
 
-        return cst_data in NODE_MODIFICATION_RULE and "child" in NODE_MODIFICATION_RULE[cst_data]
+        return (node_name in NODE_KEEP_RULE and
+                "child" in NODE_KEEP_RULE[node_name])
 
-    def __satisfy_token_remove_condition(self, cst, cst_parent_data):
+    def __satisfy_token_remove_condition(self, token_name, parent_node_name):
         """__satisfy_token_remove_condition
 
-        削除するトークンかどうかを判定する関数
+        このトークンド(token_nameで指定)を削除するかどうかを判定する関数
             * 親のノードでトークン情報を付与している場合
                 具体例
                     thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
 
         Args:
-            cst (Token): 具象構文木のノード
-            cst_parent_data (str): 具象構文木の親ノードの名前
+            token_name (Token): 具象構文木のノード名
+            parent_node_name (str): 具象構文木の親ノードの名前
 
         Returns:
             (bool): 削除するならTrue、そうでないならFalse
         """
         # すでに親ノードでトークンを付与しているなら抽象構文木に加えない(方針7)
-        return self.__satisfy_name_inherit_condition(cst_parent_data) and cst.type in NODE_MODIFICATION_RULE[cst_parent_data]["child"]
+        return (self.__is_exist_child_condition(parent_node_name) and
+                token_name in NODE_KEEP_RULE[parent_node_name]["child"])
 
-    def __satisfy_node_remove_condition(self, cst_data, cst_parent_data):
-        """__satisfy_node_remove_condition
+    def __satisfy_node_keep_condition(self, node, parent_node_name):
+        """__satisfy_node_keep_condition
 
-        削除するノードかどうかを判定する関数
-            以下のいずれでもない場合
+        このノード(node_nameで指定)を残すかどうかを判定する関数
+            以下のいずれかの場合
                 * 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」
                     具体例
                         thf_quantified_formula : thf_quantification thf_unit_formula
@@ -240,121 +302,125 @@ class ParseTstp():
                         tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
 
         Args:
-            cst_data(str): 具象構文木のノードの名前
-            cst_parent_data(str): 具象構文木の親のノード名
+            node(Tree): 具象構文木のノード名
+            parent_node_name(str): 具象構文木の親のノード名
 
         Returns:
-            (bool): 削除するならTrue、そうでないならFalse
+            (bool): 残すならTrue、そうでないならFalse
         """
-        # 全ての文法導出に対して「子が二つ以上ある」または「括弧で括られている」ものは残す(方針2,4)
-        is_leave_unconditional = cst_data in NODE_MODIFICATION_RULE and not NODE_MODIFICATION_RULE[
-            cst_data]
-        # NODE_MODIFICATION_RULEに記載されていないノードは削除する(方針1)
-        return not cst_data in NODE_MODIFICATION_RULE or (not self.__satisfy_parent_condition(cst_data, cst_parent_data) and not is_leave_unconditional)
 
-    def __get_children_from_rule(self, cst_data):
+        assert type(node) == Tree
+        node_name = node.data
+
+        # 1.NODE_KEEP_RULEにノード名があり，条件が書かれていない場合
+        keep_condition1 = (node_name in NODE_KEEP_RULE and
+                           not NODE_KEEP_RULE[node_name])
+
+        # 2.NODE_KEEP_RULEにノード名があり，親ノード名も条件を満たす場合
+        keep_condition2 = self.__satisfy_parent_condition(
+            node_name, parent_node_name)
+
+        # 3.NODE_KEEP_RULEにノード名があり，子ノード名も条件を満たす場合
+        # この場合，子トークンから情報を引き継ぐ
+        keep_condition3 = self.__is_inherit_child_token_info(node)
+
+        return keep_condition1 or keep_condition2 or keep_condition3
+
+    def __get_children_from_rule(self, node_name):
         """__get_children_from_rule
 
-        NODE_MODIFICATION_RULEから作成するノード名の引継元を取得し、setにして返す関数
+        NODE_KEEP_RULEからchildリストを取得し、setにして返す関数
 
         Args:
-            cst_data(str): 具象構文木のノード名
+            node_name(str): 具象構文木のノード名
 
         Returns:
-            child_node_name_set(set): setにしたノード名の引継元
+            (set) : setにしたchildノード名
         """
-        child_node_name_set = set()
-        if self.__satisfy_name_inherit_condition(cst_data):
-            children = NODE_MODIFICATION_RULE[cst_data]["child"]
+        children = []
+        if self.__is_exist_child_condition(node_name):
+            children = NODE_KEEP_RULE[node_name]["child"]
             if type(children) != list:
                 children = [children]
-            child_node_name_set.update(children)
-        return child_node_name_set
+        return set(children)
 
-    def __is_inherit_token_info(self, cst):
-        """__is_inherit_token_info
+    def __is_inherit_child_token_info(self, node):
+        """__is_inherit_child_token_info
 
-        トークン情報を付与するかどうかをboolで返す関数
+        子トークンから情報を引き継ぐかどうかをboolで返す関数
+        子トークンからは名前と型の情報を引き継ぐ．
         具体例
             thf_binary_nonassoc  : thf_unit_formula NONASSOC_CONNECTIVE thf_unit_formula
 
         Args:
-            cst(Tree): 具象構文木のノード
+            node(Tree): 具象構文木のノード
 
         Returns:
             (bool): トークン情報を付与するならTrueそうでないならFalse
         """
-        child_token = [
-            child.type for child in cst.children if type(child) == Token]
-        child_node_name_set = self.__get_children_from_rule(cst.data)
+        child_token_names = set([child.type for child in node.children
+                                 if type(child) == Token])
+        child_names_in_rule = self.__get_children_from_rule(node.data)
         # ファンクターや演算子等のトークンが子にあるならトークン情報を付与する(方針5,6,8)
-        # NODE_MODIFICATION_RULE[cst.data]["child"]とcstの子のトークンに積集合があるかを調べることで
-        # 子のトークンにNODE_MODIFICATION_RULE[cst.data]["child"]の要素があるかを調べている
-        return self.__satisfy_name_inherit_condition(cst.data) and child_node_name_set.intersection(set(child_token))
+        # NODE_KEEP_RULE[node.data]["child"]とcstの子のトークンに積集合があるかを調べることで
+        # 子のトークンにNODE_KEEP_RULE[node.data]["child"]の要素があるかを調べている
+        return bool(child_names_in_rule.intersection(child_token_names))
 
-    def __add_ast_node(self, ast_nodes, cst, ast_next_parent_id):
-        """__add_ast_node
+    def __add_ast_child_node(self, cst, ast_parent_id, ast_nodes, ast_edges):
+        """__add_ast_child_node
 
         抽象構文木のノードを追加する関数
 
         Args:
-            ast_nodes (list):
-                作成する抽象構文木のノードリスト
             cst (Tree or Token):
-                抽象構文木に加える具象構文木のノード
-            ast_next_parent_id (int):
-                次作成する抽象構文木のノードID
-        """
-        if type(cst) == Tree:
-            ast_nodes.append((str(ast_next_parent_id), {"label": cst.data}))
-        else:
-            ast_nodes.append(
-                (str(ast_next_parent_id), {"label": cst.value + "," + cst.type}))
-        return
-
-    def __add_ast_edge(self, ast_edges, ast_parent_id, ast_next_parent_id):
-        """__add_ast_edge
-
-        抽象構文木のノードとエッジを追加する関数
-
-        Args:
-            ast_edges (list):
-                作成する抽象構文木のエッジリスト
+                追加するノードに対応する具象構文木のノード
             ast_parent_id (int):
                 抽象構文木の親ノードID
-            ast_next_parent_id (int):
-                次作成する抽象構文木のノードID
+            ast_nodes (list):
+                抽象構文木のノードリスト
+            ast_edges (list):
+                抽象構文木のエッジリスト
         """
-        if ast_parent_id == None:
-            return
-        ast_edges.append([str(ast_parent_id), str(ast_next_parent_id)])
-        return
+        ast_id = len(ast_nodes)
+        label = self.get_node_label(cst)
+        ast_nodes.append((str(ast_id), {"label": label}))
+        if ast_parent_id is not None:
+            ast_edges.append([str(ast_parent_id), str(ast_id)])
 
-    def __satisfy_child_token_inherit_condition(self, cst_data, cst_child):
+    def __satisfy_child_token_inherit_condition(self, node_name, child_node):
         """__satisfy_child_token_inherit_condition
 
         具象構文木の子のトークンを上に上げて子のトークンを継承するかどうか判定する関数
 
         Args:
-            cst_data (str): 具象構文木のノード名
-            cst_child (Tree or Token): 具象構文木の子ノード
+            node_name (str): 具象構文木のノード名
+            child_node (Tree or Token): 具象構文木の子ノード
 
         Returns:
             (bool): 具象構文木の子のトークンを上に上げるならTrue、そうでないならFalse
         """
-        return self.__satisfy_name_inherit_condition(cst_data) and type(cst_child) == Token and cst_child.type in NODE_MODIFICATION_RULE[cst_data]["child"]
+        if type(child_node) == Token:
+            child_token_name = child_node.type
+            return self.__satisfy_token_remove_condition(child_token_name, node_name)
+        else:
+            return False
 
-    def convert_cst2ast(self, cst, cst_parent_data=None, ast_nodes=None, ast_edges=None, ast_parent_id=None):
+    def convert_cst2ast(self,
+                        cst,
+                        cst_parent_name=None,
+                        ast_parent_id=None,
+                        ast_nodes=None,
+                        ast_edges=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
 
         Args:
             cst(Tree or Token): 具象構文木のノード
-            cst_parent_data(str): 具象構文木の親のノード名
+            cst_parent_name(str): 具象構文木の親のノード名
+            ast_parent_id(int): 抽象構文木の親ノードID
             ast_nodes(list): 抽象構文木のノード
             ast_edges(list): 抽象構文木のエッジ
-            ast_parent_id(int): 抽象構文木の親ノードID
         Returns:
             ast_nodes(list): 抽象構文木のノード
             ast_edges(list): 抽象構文木のエッジ
@@ -362,30 +428,35 @@ class ParseTstp():
         if ast_nodes == None or ast_edges == None:
             ast_nodes = list()
             ast_edges = list()
-        ast_next_parent_id = len(ast_nodes)
-        # トークンの場合
-        if type(cst) != Tree:
-            if not self.__satisfy_token_remove_condition(cst, cst_parent_data):
-                self.__add_ast_node(ast_nodes, cst, ast_next_parent_id)
-                self.__add_ast_edge(
-                    ast_edges, ast_parent_id, ast_next_parent_id)
-            return ast_nodes, ast_edges
 
-        # これ以降は内部ノード
-        if self.__is_inherit_token_info(cst) or not self.__satisfy_node_remove_condition(cst.data, cst_parent_data):
-            inherit_node = cst
-            for child in cst.children:
-                if self.__satisfy_child_token_inherit_condition(cst.data, child):
-                    # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
-                    inherit_node = child
-                    break
-            self.__add_ast_node(ast_nodes, inherit_node, ast_next_parent_id)
-            self.__add_ast_edge(ast_edges, ast_parent_id, ast_next_parent_id)
+        if type(cst) == Token:
+            # トークンの場合
+            token_name = cst.type
+            if not self.__satisfy_token_remove_condition(token_name, cst_parent_name):
+                self.__add_ast_child_node(
+                    cst, ast_parent_id, ast_nodes, ast_edges)
         else:
+            # 内部ノードの場合
+            assert type(cst) == Tree
+
+            cst_name = cst.data
             ast_next_parent_id = ast_parent_id
-        for child in cst.children:
-            self.convert_cst2ast(
-                child, cst.data, ast_nodes, ast_edges, ast_next_parent_id)
+            if self.__satisfy_node_keep_condition(cst, cst_parent_name):
+                inherit_node = cst
+                if self.__is_exist_child_condition(cst_name):
+                    for child in cst.children:
+                        if self.__satisfy_child_token_inherit_condition(cst_name, child):
+                            # 上に上げるトークンは一つしか存在しないため、見つけ次第breakする
+                            inherit_node = child
+                            break
+                self.__add_ast_child_node(
+                    inherit_node, ast_parent_id, ast_nodes, ast_edges)
+                ast_next_parent_id = len(ast_nodes) - 1
+
+            for child in cst.children:
+                self.convert_cst2ast(
+                    child, cst_name, ast_next_parent_id, ast_nodes, ast_edges)
+
         return ast_nodes, ast_edges
 
     def parse_tstp(self, tstp):
@@ -399,7 +470,7 @@ class ParseTstp():
         Returns:
             cst_root (Tree): tptpの文法で構文解析した構文木
         """
-        with open(self.lark_path, encoding="utf-8") as grammar:
+        with open(self.grammar_path, encoding="utf-8") as grammar:
             parser = Lark(grammar.read(), start="tptp_root")
             cst_root = parser.parse(tstp)
 
@@ -435,8 +506,8 @@ class ParseTstp():
             node_id2label[ast_node_id] = label
         return node_id2label
 
-    def __create_source2target(self, ast_links):
-        """__create_source2target
+    def __create_source2targets(self, ast_links):
+        """__create_source2targets
 
         networkxで作成した有向グラフのjsonのlinksから、
         始点をkeyとして終点のリストをvalueとしたdictを作成し、それを返す関数
@@ -456,46 +527,47 @@ class ParseTstp():
                     ]
 
         Returns:
-            source2target(dict): sourceをkey、targetのリストをvalueとしたdict
+            source2targets(dict): sourceをkey、targetのリストをvalueとしたdict
         """
-        source2target = dict()
+        source2targets = defaultdict(list)
         for link in ast_links:
             source = link["source"]
             target = link["target"]
-            if source in source2target.keys():
-                source2target[source].append(target)
-            else:
-                source2target[source] = [target]
-        return source2target
+            source2targets[source].append(target)
+        return source2targets
 
-    def __get_assumption_formula_labels(self, node_id2label, source2target, annotations_id):
+    def __get_assumption_formula_labels(self, node_id2label, source2targets, annotations_id):
         """__get_assumption_formula_labels
 
         参照した式のラベルを返す関数
 
         Args:
             node_id2label(dict): idをkey、labelをvalueとしたdict
-            source2target(dict): sourceをkey、targetのリストをvalueとしたdict
+            source2targets(dict[int, list[int]]): sourceをkey、targetのリストをvalueとしたdict
             annotations_id(str): ノードのラベルがanntotationsのノードid
 
         Returns:
             assumption_formula_labels(list): 参照した式のラベルのリスト
         """
-        assumption_formula_labels = list()
-        annotations_children = source2target[annotations_id]
+        annotations_children = source2targets[annotations_id]
         if not annotations_children:
-            return assumption_formula_labels
-        if not "inference" in node_id2label[annotations_children[0]]:
-            return assumption_formula_labels
-        inference_children = source2target[annotations_children[0]]
+            return []
+
+        inference = annotations_children[0]
+        if not "inference" in node_id2label[inference]:
+            return []
+
+        inference_children = source2targets[inference]
         if not inference_children:
-            return assumption_formula_labels
-        inference_parents = inference_children[-1]
-        inference_parents_children = source2target[inference_parents]
-        for assumption_formula in inference_parents_children:
+            return []
+
+        assumption_list = inference_children[-1]
+        assumptions = source2targets[assumption_list]
+
+        assumption_formula_labels = []
+        for assumption in assumptions:
             # ラベルは"value, type"となっておりその内valueのみ取得する
-            assumption_formula_label = node_id2label[assumption_formula].split(",")[
-                0]
+            assumption_formula_label = node_id2label[assumption].split(",")[0]
             assumption_formula_labels.append(assumption_formula_label)
 
         return assumption_formula_labels
@@ -515,21 +587,21 @@ class ParseTstp():
             ast = json.load(f)
         ast_nodes = ast["nodes"]
         ast_links = ast["links"]
-        source2target = self.__create_source2target(ast_links)
+        source2target = self.__create_source2targets(ast_links)
         node_id2label = self.__create_node_id2label(ast_nodes)
         graph_edges = list()
-        ast_top_children = source2target["0"]
+        fof_list = source2target["0"]
 
-        for formula_top in ast_top_children:
-            formula_top_children = source2target[formula_top]
+        for fof in fof_list:
+            fof_children = source2target[fof]
             # ラベルは"value, type"となっておりその内valueのみ取得する
-            formula_label = node_id2label[formula_top_children[0]].split(",")[
-                0]
-            annotations_id = formula_top_children[-1]
+            formula_name_node = fof_children[0]
+            formula_name = node_id2label[formula_name_node].split(",")[0]
+            annotations_node = fof_children[-1]
             assumption_formula_labels = self.__get_assumption_formula_labels(
-                node_id2label, source2target, annotations_id)
+                node_id2label, source2target, annotations_node)
             for assumption_formula_label in assumption_formula_labels:
-                graph_edges.append([assumption_formula_label, formula_label])
+                graph_edges.append([assumption_formula_label, formula_name])
 
         G = nx.DiGraph()
         G.add_edges_from(graph_edges)
