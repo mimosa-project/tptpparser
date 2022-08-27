@@ -1,9 +1,7 @@
 import json
-from graphviz import Digraph
 from lark import Lark, Tree, Token
-import networkx as nx
 from networkx.readwrite import json_graph
-from collections import defaultdict
+from handler import NetworkxHandler
 
 # 方針
 # 1. 基本的に子が一つしかなく記号などを含んでいない場合は飛ばす
@@ -178,63 +176,6 @@ class ParseTstp():
             self.collect_digraph_data(
                 child, child_id, graph_nodes, graph_edges)
 
-    def create_tree_graph_on_graphviz(self, graph_nodes, graph_edges):
-        """create_tree_graph_on_graphviz
-
-        graphvizのインスタンスにノードとエッジを追加し、graphvizのインスタンスを返す関数
-
-        Args:
-            graph_nodes (list): グラフに追加するノードのリスト
-            graph_edges (list): グラフに追加するエッジのリスト
-        Returns:
-            G(graphviz.graphs.Digraph): ノードとエッジを追加したgraphvizのインスタンス
-        """
-        G = Digraph()
-        for node_id, attr in graph_nodes:
-            G.node(str(node_id), attr["label"])
-        G.edges(graph_edges)
-        return G
-
-    def show_tree_graph_on_graphviz(self, G, path):
-        """show_tree_graph_on_graphviz
-
-        graphvizのインスタンスからグラフを描画し、引数のpathに保存する関数
-
-        Args:
-            G (graphviz.graphs.Digraph): ノードとエッジを追加したgraphvizのインスタンス
-            path (str): グラフを保存するパス
-        """
-        G.render(path, format="png")
-
-    def create_tree_graph_on_networkx(self, graph_nodes, graph_edges):
-        """create_tree_graph_on_networkx
-
-        networkxのインスタンスにノードとエッジを追加し、networkxのインスタンスを返す関数
-
-        Args:
-            graph_nodes (list): グラフに追加するノードのリスト
-            graph_edges (list): グラフに追加するエッジのリスト
-
-        Returns:
-            G(networkx.classes.digraph.DiGraph): ノードとエッジを追加したnetworkxのインスタンス
-        """
-        G = nx.DiGraph()
-        G.add_nodes_from(graph_nodes)
-        G.add_edges_from(graph_edges)
-        return G
-
-    def show_tree_graph_on_networkx(self, G, path):
-        """show_tree_graph_on_networkx
-
-        networkxのインスタンスからグラフを描画し、引数のpathに保存する関数
-
-        Args:
-            G (networkx.classes.digraph.DiGraph): ノードとエッジを追加したnetworkxのインスタンス
-            path (str): グラフを保存するパス
-        """
-        agraph = nx.nx_agraph.to_agraph(G)
-        agraph.draw(path, prog="dot", format="png")
-
     def __satisfy_parent_condition(self, node_name, parent_node_name):
         """__satisfy_parent_condition
 
@@ -366,7 +307,7 @@ class ParseTstp():
         # 子のトークンにNODE_KEEP_RULE[node.data]["child"]の要素があるかを調べている
         return bool(child_names_in_rule.intersection(child_token_names))
 
-    def __add_ast_child_node(self, cst, ast_parent_id, ast_nodes, ast_edges):
+    def __add_ast_child_node(self, cst, ast_parent_id, ast_handler):
         """__add_ast_child_node
 
         抽象構文木のノードを追加する関数
@@ -376,16 +317,19 @@ class ParseTstp():
                 追加するノードに対応する具象構文木のノード
             ast_parent_id (int):
                 抽象構文木の親ノードID
-            ast_nodes (list):
-                抽象構文木のノードリスト
-            ast_edges (list):
-                抽象構文木のエッジリスト
+            ast_handler (NetworkxHandler):
+                抽象構文木のグラフを管理するインスタンス
         """
-        ast_id = len(ast_nodes)
-        label = self.get_node_label(cst)
-        ast_nodes.append((str(ast_id), {"label": label}))
+        ast_id = ast_handler.get_next_node()
+        if type(cst) == Tree:
+            label = cst.data
+            ast_handler.add_node(label)
+        else:
+            label = cst.value
+            grammatical_category = cst.type
+            ast_handler.add_node(label, grammatical_category=grammatical_category)
         if ast_parent_id is not None:
-            ast_edges.append([str(ast_parent_id), str(ast_id)])
+            ast_handler.add_edge(ast_parent_id, ast_id)
 
     def __satisfy_child_token_inherit_condition(self, node_name, child_node):
         """__satisfy_child_token_inherit_condition
@@ -409,8 +353,7 @@ class ParseTstp():
                         cst,
                         cst_parent_name=None,
                         ast_parent_id=None,
-                        ast_nodes=None,
-                        ast_edges=None):
+                        ast_handler=None):
         """convert_cst2ast
 
         具象構文木から抽象構文木を作成する関数
@@ -419,22 +362,22 @@ class ParseTstp():
             cst(Tree or Token): 具象構文木のノード
             cst_parent_name(str): 具象構文木の親のノード名
             ast_parent_id(int): 抽象構文木の親ノードID
-            ast_nodes(list): 抽象構文木のノード
-            ast_edges(list): 抽象構文木のエッジ
+            ast_handler (NetworkxHandler):
+                抽象構文木のグラフを管理するインスタンス
         Returns:
-            ast_nodes(list): 抽象構文木のノード
-            ast_edges(list): 抽象構文木のエッジ
+            ast_handler (NetworkxHandler):
+                抽象構文木作成後の
+                抽象構文木のグラフを管理するインスタンス
         """
-        if ast_nodes == None or ast_edges == None:
-            ast_nodes = list()
-            ast_edges = list()
+        if ast_handler is None:
+            ast_handler = NetworkxHandler()
 
         if type(cst) == Token:
             # トークンの場合
             token_name = cst.type
             if not self.__satisfy_token_remove_condition(token_name, cst_parent_name):
                 self.__add_ast_child_node(
-                    cst, ast_parent_id, ast_nodes, ast_edges)
+                    cst, ast_parent_id, ast_handler)
         else:
             # 内部ノードの場合
             assert type(cst) == Tree
@@ -450,14 +393,14 @@ class ParseTstp():
                             inherit_node = child
                             break
                 self.__add_ast_child_node(
-                    inherit_node, ast_parent_id, ast_nodes, ast_edges)
-                ast_next_parent_id = len(ast_nodes) - 1
+                    inherit_node, ast_parent_id, ast_handler)
+                ast_next_parent_id = ast_handler.get_last_node()
 
             for child in cst.children:
                 self.convert_cst2ast(
-                    child, cst_name, ast_next_parent_id, ast_nodes, ast_edges)
+                    child, cst_name, ast_next_parent_id, ast_handler)
 
-        return ast_nodes, ast_edges
+        return ast_handler
 
     def parse_tstp(self, tstp):
         """parse_tstp
@@ -476,101 +419,70 @@ class ParseTstp():
 
         return cst_root
 
-    def __create_node_id2label(self, ast_nodes):
-        """__create_node_id2label
-
-        networkxで作成した有向グラフのjsonのnodesから、
-        ノードIDをkeyとして、ラベルをvalueとしたdictを作成し、それを返す関数
-
-        Args:
-            ast_nodes (json): networkxで作成した有向グラフのjsonのndoes
-                nodesのフォーマット
-                    [
-                        {
-                            "label": ノードのラベル(str),
-                            "id": ノードid(str)
-                        },
-                        {
-                            "label": ノードのラベル(str),
-                            "id": ノードid(str)
-                        },...
-                    ]
-
-        Returns:
-            node_id2label(dict): idをkey、labelをvalueとしたdict
-        """
-        node_id2label = dict()
-        for node in ast_nodes:
-            ast_node_id = node["id"]
-            label = node["label"]
-            node_id2label[ast_node_id] = label
-        return node_id2label
-
-    def __create_source2targets(self, ast_links):
-        """__create_source2targets
-
-        networkxで作成した有向グラフのjsonのlinksから、
-        始点をkeyとして終点のリストをvalueとしたdictを作成し、それを返す関数
+    def get_inference_children(self, annotations_id, ast_handler):
+        """get_inference_children
+        
+        inferenceノードの子ノードを取得する関数
 
         Args:
-            ast_links (json): networkxで作成した有向グラフのjsonのlinks
-                ast_linksのフォーマット:
-                    [
-                        {
-                            "source": 始点のノードid(str),
-                            "target": 終点のノードid(str)
-                        },
-                        {
-                            "source": 始点のノードid(str),
-                            "target": 終点のノードid(str)
-                        },...
-                    ]
-
-        Returns:
-            source2targets(dict): sourceをkey、targetのリストをvalueとしたdict
-        """
-        source2targets = defaultdict(list)
-        for link in ast_links:
-            source = link["source"]
-            target = link["target"]
-            source2targets[source].append(target)
-        return source2targets
-
-    def __get_assumption_formula_labels(self, node_id2label, source2targets, annotations_id):
-        """__get_assumption_formula_labels
-
-        参照した式のラベルを返す関数
-
-        Args:
-            node_id2label(dict): idをkey、labelをvalueとしたdict
-            source2targets(dict[int, list[int]]): sourceをkey、targetのリストをvalueとしたdict
             annotations_id(str): ノードのラベルがanntotationsのノードid
+            ast_handler (NetworkxHandler): 抽象構文木のハンドラ
 
         Returns:
-            assumption_formula_labels(list): 参照した式のラベルのリスト
+            inference_children (list): inferenceノードの子ノードのリスト
         """
-        annotations_children = source2targets[annotations_id]
+        annotations_children = ast_handler.get_children(annotations_id)
         if not annotations_children:
             return []
 
         inference = annotations_children[0]
-        if not "inference" in node_id2label[inference]:
+        if not "inference" in ast_handler.get_label(inference):
             return []
 
-        inference_children = source2targets[inference]
+        inference_children = ast_handler.get_children(inference)
         if not inference_children:
             return []
+        
+        return inference_children
 
+    def __get_inference_rule(self, annotations_id, ast_handler):
+        """__get_inference_rule
+
+        式を導出するための操作名を取得する関数
+
+        Args:
+            annotations_id(int): ノードのラベルがanntotationsのノードid
+            ast_handler (NetworkxHandler): 抽象構文木グラフのハンドラ
+
+        Returns:
+            inference_rule (str): 式を導出するための操作名
+        """
+        inference_children = self.get_inference_children(annotations_id, ast_handler)
+        if not inference_children:
+            return None
+        inference_rule_node = inference_children[0]
+        inference_rule = ast_handler.get_label(inference_rule_node)
+        return inference_rule
+
+    def __get_assumption_formulas(self, annotations_id, ast_handler):
+        """__get_assumption_formulas
+
+        参照した式を取得する関数
+
+        Args:
+            annotations_id(str): ノードのラベルがanntotationsのノードid
+            ast_handler (NetworkxHandler): 抽象構文木グラフのハンドラ
+
+        Returns:
+            assumption_formulas(list): 参照した式のノードのリスト
+        """
+        inference_children = self.get_inference_children(annotations_id, ast_handler)
+        if not inference_children:
+            return []
         assumption_list = inference_children[-1]
-        assumptions = source2targets[assumption_list]
+        assumption_formulas = ast_handler.get_children(assumption_list)
 
-        assumption_formula_labels = []
-        for assumption in assumptions:
-            # ラベルは"value, type"となっておりその内valueのみ取得する
-            assumption_formula_label = node_id2label[assumption].split(",")[0]
-            assumption_formula_labels.append(assumption_formula_label)
-
-        return assumption_formula_labels
+        return assumption_formulas
 
     def create_deduction_tree_graph_on_networkx(self, ast_path):
         """create_deduction_tree_graph_on_networkx
@@ -581,31 +493,33 @@ class ParseTstp():
             ast_path(str): networkxで作成した抽象構文木のグラフ(json)のパス
 
         Returns:
-            G(networkx.classes.digraph.DiGraph): エッジを追加したnetworkxのインスタンス
+            graph(networkx.classes.digraph.DiGraph): 証明のグラフのnetworkxのインスタンス
         """
-        with open(ast_path, "r") as f:
-            ast = json.load(f)
-        ast_nodes = ast["nodes"]
-        ast_links = ast["links"]
-        source2target = self.__create_source2targets(ast_links)
-        node_id2label = self.__create_node_id2label(ast_nodes)
-        graph_edges = list()
-        fof_list = source2target["0"]
-
+        ast_handler = NetworkxHandler()
+        ast_handler.load_json(ast_path)
+        deduction_handler = NetworkxHandler()
+        fof_list = ast_handler.get_children(0)
         for fof in fof_list:
-            fof_children = source2target[fof]
-            # ラベルは"value, type"となっておりその内valueのみ取得する
+            fof_children = ast_handler.get_children(fof)
             formula_name_node = fof_children[0]
-            formula_name = node_id2label[formula_name_node].split(",")[0]
             annotations_node = fof_children[-1]
-            assumption_formula_labels = self.__get_assumption_formula_labels(
-                node_id2label, source2target, annotations_node)
-            for assumption_formula_label in assumption_formula_labels:
-                graph_edges.append([assumption_formula_label, formula_name])
-
-        G = nx.DiGraph()
-        G.add_edges_from(graph_edges)
-        return G
+            formula_name = ast_handler.get_label(formula_name_node)
+            inference_rule = self.__get_inference_rule(annotations_node, ast_handler)
+            deduction_handler.add_node(formula_name, inference_rule=inference_rule)
+        for fof in fof_list:
+            fof_children = ast_handler.get_children(fof)
+            formula_name_node = fof_children[0]
+            formula_name = ast_handler.get_label(formula_name_node)
+            annotations_node = fof_children[-1]
+            assumption_formulas = self.__get_assumption_formulas(
+                annotations_node, ast_handler)
+            for assumption_formula in assumption_formulas:
+                assumption_formula_label = ast_handler.get_label(assumption_formula)
+                assumption_formula_node = deduction_handler.get_node(assumption_formula_label)
+                formula_node = deduction_handler.get_node(formula_name)
+                deduction_handler.add_edge(assumption_formula_node, formula_node)
+        graph = deduction_handler.get_graph()
+        return graph
 
     def convert_tstp2json(self, tstp_path, json_path):
         """convert_tstp2json
@@ -619,9 +533,8 @@ class ParseTstp():
         with open(tstp_path, "r") as f:
             tstp = f.read()
         cst_root = self.parse_tstp(tstp)
-        graph_nodes, graph_edges = self.convert_cst2ast(cst_root)
-        ast_graph = self.create_tree_graph_on_networkx(
-            graph_nodes, graph_edges)
+        ast_handler = self.convert_cst2ast(cst_root)
+        ast_graph = ast_handler.get_graph()
         json_root = json_graph.node_link_data(ast_graph)
         with open(json_path, "w") as f:
             json.dump(json_root, f, indent=4)
