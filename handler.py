@@ -208,6 +208,9 @@ class NetworkxHandler:
 
         Args:
             node (int): ノードID
+
+        Returns:
+            (str): ノードのラベル
         """
         return self.node2label[node]
 
@@ -234,6 +237,9 @@ class NetworkxHandler:
 
         Args:
             label (str): ラベル
+
+        Returns:
+            (int): ノードID
         """
         return self.label2node[label]
 
@@ -245,6 +251,9 @@ class NetworkxHandler:
         Args:
             node (int): ノードID
             attr_key (str): アトリビュートの種類
+
+        Returns:
+            (str): ノードのアトリビュート
         """
         return self.node2attr[node][attr_key]
 
@@ -307,6 +316,9 @@ class NetworkxHandler:
             label (str): 追加するノードのラベル
             attr (dict): 追加するノードのアトリビュート
                 例: {"inference_rule": "cnf_transformation"}
+
+        Returns:
+            (int): 追加したノードのID
         """
         new_node = self.get_next_node()
         self.node2label[new_node] = label
