@@ -498,6 +498,7 @@ class ParseTstp():
         ast_handler = NetworkxHandler()
         ast_handler.load_json(ast_path)
         deduction_handler = NetworkxHandler()
+        deduction_tree_edges = []
         fof_list = ast_handler.get_children(0)
         for fof in fof_list:
             fof_children = ast_handler.get_children(fof)
@@ -506,18 +507,16 @@ class ParseTstp():
             formula_name = ast_handler.get_label(formula_name_node)
             inference_rule = self.__get_inference_rule(annotations_node, ast_handler)
             deduction_handler.add_node(formula_name, inference_rule=inference_rule)
-        for fof in fof_list:
-            fof_children = ast_handler.get_children(fof)
-            formula_name_node = fof_children[0]
-            formula_name = ast_handler.get_label(formula_name_node)
-            annotations_node = fof_children[-1]
             assumption_formulas = self.__get_assumption_formulas(
                 annotations_node, ast_handler)
             for assumption_formula in assumption_formulas:
                 assumption_formula_label = ast_handler.get_label(assumption_formula)
-                assumption_formula_node = deduction_handler.get_node(assumption_formula_label)
-                formula_node = deduction_handler.get_node(formula_name)
-                deduction_handler.add_edge(assumption_formula_node, formula_node)
+                deduction_tree_edges.append(
+                    (assumption_formula_label, formula_name))
+        for source_label, target_label in deduction_tree_edges:
+            source = deduction_handler.get_node(source_label)
+            target = deduction_handler.get_node(target_label)
+            deduction_handler.add_edge(source, target)
         graph = deduction_handler.get_graph()
         return graph
 
