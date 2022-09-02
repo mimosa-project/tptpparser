@@ -6,7 +6,7 @@ from networkx.readwrite import json_graph
 
 
 class GraphvizHandler:
-    """GraohvizHandler
+    """GraphvizHandler
 
     graphvizグラフを操作する関数をまとめたクラス
     """
