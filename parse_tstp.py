@@ -408,12 +408,8 @@ class ParseTstp():
         inference = annotations_children[0]
         if not "inference" in ast_handler.get_label(inference):
             return []
-
-        inference_children = ast_handler.get_children(inference)
-        if not inference_children:
-            return []
         
-        return inference_children
+        return ast_handler.get_children(inference)
 
     def __get_inference_rule(self, annotations_id, ast_handler):
         """__get_inference_rule
