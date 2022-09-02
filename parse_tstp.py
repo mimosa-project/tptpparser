@@ -296,8 +296,8 @@ class ParseTstp():
             ast_handler.add_node(label)
         else:
             label = cst.value
-            grammatical_category = cst.type
-            ast_handler.add_node(label, grammatical_category=grammatical_category)
+            token_type = cst.type
+            ast_handler.add_node(label, token_type=token_type)
         if ast_parent_id is not None:
             ast_handler.add_edge(ast_parent_id, ast_id)
 
