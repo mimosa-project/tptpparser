@@ -145,37 +145,7 @@ class ParseTstp():
 
     def __init__(self, grammar_path):
         self.grammar_path = grammar_path
-
-    def get_node_label(self, node):
-        if node is None:
-            return None
-        if type(node) == Tree:
-            return node.data
-        else:
-            return node.value + "," + node.type
-
-    def collect_digraph_data(self, node, node_id, graph_nodes, graph_edges):
-        """collect_digraph_data
-
-        グラフを作成するために必要なデータ(エッジ等)を収集する関数
-
-        Args:
-            node (Tree or Token): 木のノード
-            node_id (int): ノードごとに振られるノードID
-            graph_nodes (list): グラフのノードの集合
-            graph_edges (list): グラフのエッジの集合
-        """
-        graph_nodes.append(str(len(graph_nodes)), {
-                           "label": self.get_node_label(node)})
-        if type(node) == Token:
-            return
-
-        for child in node.children:
-            child_id = len(graph_nodes)
-            graph_edges.append([str(node_id), str(child_id)])
-            self.collect_digraph_data(
-                child, child_id, graph_nodes, graph_edges)
-
+        
     def __satisfy_parent_condition(self, node_name, parent_node_name):
         """__satisfy_parent_condition
 
