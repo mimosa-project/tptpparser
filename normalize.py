@@ -1,7 +1,6 @@
 from copy import deepcopy
 import json
 import os
-import networkx
 from networkx.readwrite import json_graph
 from handler import NetworkxHandler
 
@@ -124,7 +123,7 @@ class Converter():
             # dfsで探索し、& が再帰されて使用されている場合は統合する
             def merge_conjunction_recursively(node):
                 label = output_nx.get_label(node)
-                    if label == "&":
+                if label == "&":
                     children = deepcopy(output_nx.get_children(node))
                     for child in children:
                         output_nx.add_edge(root, child)
@@ -152,11 +151,11 @@ class Converter():
 
                 def merge_disjunction_recursively(node):
                     label = output_nx.get_label(node)
-                        if label == "|":
+                    if label == "|":
                         children = deepcopy(output_nx.get_children(node))
                         for child in children:
                             output_nx.add_edge(disjunction_node, child)
-                                merge_disjunction_recursively(child)
+                            merge_disjunction_recursively(child)
                         output_nx.remove_node(node)
 
                 grand_children = deepcopy(output_nx.get_children(child))
@@ -175,6 +174,6 @@ class Converter():
                 output_nx.remove_node(node)
                 if parents:
                     parent = parents[0]
-                output_nx.add_edge(parent, child)
+                    output_nx.add_edge(parent, child)
                 output_nx.set_label(child, "~" + output_nx.get_label(child))
             self.merge_negation(output_nx, child)

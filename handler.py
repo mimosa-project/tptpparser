@@ -10,6 +10,7 @@ class GraphvizHandler:
 
     graphvizグラフを操作する関数をまとめたクラス
     """
+
     def __init__(self):
         pass
 
@@ -47,6 +48,7 @@ class NetworkxHandler:
 
     networkxグラフを操作する関数をまとめたクラス
     """
+
     def __init__(self):
         self.graph = nx.DiGraph()
         self.source2targets = defaultdict(list)
@@ -105,7 +107,7 @@ class NetworkxHandler:
 
     def get_graph_edges(self):
         """get_graph_edges
-        
+
         networkxグラフのエッジを取得する関数(アトリビュートを含まない)
 
         Returns:
@@ -145,12 +147,12 @@ class NetworkxHandler:
 
     def get_ascendants(self, node):
         """get_ascendants
-        
+
         ノードの祖先全てを取得する関数
 
         Args:
             node (int): ノードID
-        
+
         Returns:
             (set): ノードの祖先のset
         """
@@ -167,12 +169,12 @@ class NetworkxHandler:
 
     def get_descendants(self, node):
         """get_descendants
-        
+
         ノードの子孫全てを取得する関数
 
         Args:
             node (int): ノードID
-        
+
         Returns:
             (set): ノードの子孫のset
         """
@@ -189,7 +191,7 @@ class NetworkxHandler:
 
     def get_orphans(self):
         """get_orphans
-        
+
         親ノードがないノードを取得する関数
 
         Returns:
@@ -203,7 +205,7 @@ class NetworkxHandler:
 
     def get_label(self, node):
         """get_label
-        
+
         ノードのラベルを取得する関数
 
         Args:
@@ -216,7 +218,7 @@ class NetworkxHandler:
 
     def set_label(self, node, label):
         """set_label
-        
+
         ノードのラベルを設定する関数
 
         Args:
@@ -232,7 +234,7 @@ class NetworkxHandler:
 
     def get_nodes(self, label):
         """get_nodes
-        
+
         ラベルからノードを取得する関数
 
         Args:
@@ -341,7 +343,7 @@ class NetworkxHandler:
 
     def add_child(self, parent, label, attr=None):
         """add_child
-        
+
         子ノードを追加する関数
 
         Args:
