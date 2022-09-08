@@ -197,7 +197,7 @@ class NetworkxHandler:
         """
         orphans = set()
         for node, _ in self.get_graph_nodes():
-            if node in self.target2sources:
+            if not node in self.target2sources:
                 orphans.add(node)
         return orphans
 
