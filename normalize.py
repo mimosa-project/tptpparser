@@ -13,7 +13,7 @@ class DeductionTree:
     def collect_cnf_nodes_recursively(self, node, cnf_nodes, is_cnf=False):
         targets = self.nx.get_children(node)
         for target in targets:
-            inference_rule = self.nx.get_attr(target, "inference_rule")
+            inference_rule = self.nx.get_attr(target)["inference_rule"]
             is_already_added = False
             if is_cnf or inference_rule == "cnf_transformation":
                 is_cnf = True

@@ -243,19 +243,18 @@ class NetworkxHandler:
         """
         return self.label2nodes[label]
 
-    def get_attr(self, node, attr_key):
+    def get_attr(self, node):
         """get_attr
 
         ノードのアトリビュートを取得する関数
 
         Args:
             node (int): ノードID
-            attr_key (str): アトリビュートの種類
 
         Returns:
             (str): ノードのアトリビュート
         """
-        return self.node2attr[node][attr_key]
+        return self.node2attr[node]
 
     def get_all_nodes(self):
         """get_all_nodes
