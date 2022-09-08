@@ -322,6 +322,7 @@ class NetworkxHandler:
         new_node = self.get_next_node()
         self.node2label[new_node] = label
         self.label2nodes[label].append(new_node)
+        self.node2attr[new_node] = attr
         self.graph.add_node(new_node, label=label, **attr)
         return new_node
 
