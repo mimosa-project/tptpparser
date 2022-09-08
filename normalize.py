@@ -39,8 +39,19 @@ class FofTree:
 
     def get_formula_root(self, fof_name):
         nodes = self.nx.get_nodes(fof_name)
+        name_node = None
+        for node in nodes:
+            attr = self.nx.get_attr(node)
+            if self.is_name_node(attr):
+                name_node = node
+        if name_node is None:
+            return None
+        theorem_root = self.nx.get_parents(name_node)[0]
         formula_root = self.nx.get_children(theorem_root)[2]
         return formula_root
+
+    def is_name_node(self, attr):
+        return "token_type" in attr and attr["token_type"] == "NAME"
 
 
 class Converter():
@@ -51,10 +62,10 @@ class Converter():
     def save_normalized_formula(self, dir_path):
         nodes = self.deduction_tree.collect_cnf_nodes()
         for node in nodes:
-            formula_root = self.fof_tree.get_formula_root(node)
+            fof_name = self.deduction_tree.nx.get_label(node)
+            formula_root = self.fof_tree.get_formula_root(fof_name)
             graph = self.normalize_formula(formula_root)
             json_root = json_graph.node_link_data(graph)
-            fof_name = self.fof_tree.nx.get_label(node)
             with open(os.path.join(dir_path, fof_name+".json"), "w") as f:
                 json.dump(json_root, f, indent=4)
 
