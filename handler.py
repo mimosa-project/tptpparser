@@ -152,7 +152,7 @@ class NetworkxHandler:
             node (int): ノードID
         
         Returns:
-            (list): ノードの祖先のリスト
+            (set): ノードの祖先のset
         """
         ascendants = set()
 
@@ -174,7 +174,7 @@ class NetworkxHandler:
             node (int): ノードID
         
         Returns:
-            (list): ノードの子孫のリスト
+            (set): ノードの子孫のset
         """
         decendants = set()
 
@@ -193,7 +193,7 @@ class NetworkxHandler:
         親ノードがないノードを取得する関数
 
         Returns:
-            (list): 親ノードがないノードのリスト
+            (set): 親ノードがないノードのset
         """
         orphans = set()
         for node, _ in self.get_graph_nodes():
