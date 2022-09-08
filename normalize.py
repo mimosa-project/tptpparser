@@ -42,7 +42,7 @@ class FofTree:
         name_node = None
         for node in nodes:
             attr = self.nx.get_attr(node)
-            if self.is_name_node(attr):
+            if self.is_name_node(node, attr):
                 name_node = node
         if name_node is None:
             return None
@@ -50,8 +50,11 @@ class FofTree:
         formula_root = self.nx.get_children(theorem_root)[2]
         return formula_root
 
-    def is_name_node(self, attr):
-        return "token_type" in attr and attr["token_type"] == "NAME"
+    def is_name_node(self, node, attr):
+        return self.is_token(node) and attr["token_type"] == "NAME"
+
+    def is_token(self, node):
+        return "token_type" in self.nx.get_attr(node)
 
 
 class Converter():
@@ -82,14 +85,20 @@ class Converter():
         # 1.Quantifier情報が入っているノード
         # 2.トークン情報が入っていないノード
         label = self.fof_tree.nx.get_label(node)
-        if self.is_reserve_node(label):
+        if self.is_reserve_node(node, label):
             reserve_node = output_nx.get_next_node()
+            last_node = reserve_node
             output_nx.add_node(label)
             if parent_node is not None:
                 output_nx.add_edge(parent_node, reserve_node)
+        else:
+            last_node = parent_node
         for child in self.fof_tree.nx.get_children(node):
-            last_node = output_nx.get_last_node()
-            if "!" in label:
+            if last_node == -1:
+                last_node = None
+            if label == "!":
+                if len(self.fof_tree.nx.get_children(node)) == 1:
+                    break
                 # 全称量化子の場合は右の子ノードのみを残す
                 second_child = self.fof_tree.nx.get_children(node)[1]
                 self.remove_redundant_nodes(
@@ -98,8 +107,8 @@ class Converter():
             else:
                 self.remove_redundant_nodes(output_nx, child, last_node)
 
-    def is_reserve_node(self, label):
-        return "," in label and not "!" in label
+    def is_reserve_node(self, node, label):
+        return self.fof_tree.is_token(node) and not label == "!"
 
     def arrange_conjuction(self, output_nx):
         root = output_nx.get_orphans()[0]
