@@ -52,7 +52,7 @@ class NetworkxHandler:
         self.source2targets = defaultdict(list)
         self.target2sources = defaultdict(list)
         self.node2label = dict()
-        self.label2node = dict()
+        self.label2nodes = defaultdict(list)
         self.node2attr = dict()
 
     def load_json(self, path):
@@ -85,7 +85,7 @@ class NetworkxHandler:
         for node, attr in self.get_graph_nodes():
             label = attr["label"]
             self.node2label[node] = label
-            self.label2node[label] = node
+            self.label2nodes[label].append(node)
             self.node2attr[node] = attr
 
     def get_graph_nodes(self):
@@ -225,13 +225,13 @@ class NetworkxHandler:
         """
         previous_label = self.get_label(node)
         self.node2label[node] = label
-        del self.label2node[previous_label]
-        self.label2node[label] = node
+        self.label2nodes[previous_label].remove(node)
+        self.label2nodes[label].append(node)
         self.node2attr[node]["label"] = label
         self.graph[node]["label"] = label
 
-    def get_node(self, label):
-        """get_node
+    def get_nodes(self, label):
+        """get_nodes
         
         ラベルからノードを取得する関数
 
@@ -241,7 +241,7 @@ class NetworkxHandler:
         Returns:
             (int): ノードID
         """
-        return self.label2node[label]
+        return self.label2nodes[label]
 
     def get_attr(self, node, attr_key):
         """get_attr
@@ -322,7 +322,7 @@ class NetworkxHandler:
         """
         new_node = self.get_next_node()
         self.node2label[new_node] = label
-        self.label2node[label] = new_node
+        self.label2nodes[label].append(new_node)
         self.graph.add_node(new_node, label=label, **attr)
         return new_node
 
@@ -360,7 +360,8 @@ class NetworkxHandler:
         Args:
             node (int): 削除するノードID
         """
-        del self.label2node[self.node2label[node]]
+        label = self.get_label(node)
+        self.label2nodes[label].remove(node)
         del self.node2label[node]
         if node in self.source2targets:
             del self.source2targets[node]

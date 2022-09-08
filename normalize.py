@@ -38,8 +38,7 @@ class FofTree:
         self.nx.load_json(path)
 
     def get_formula_root(self, fof_name):
-        node = self.nx.get_node(fof_name)
-        theorem_root = self.nx.get_parents(node)[0]
+        nodes = self.nx.get_nodes(fof_name)
         formula_root = self.nx.get_children(theorem_root)[2]
         return formula_root
 
