@@ -228,7 +228,7 @@ class NetworkxHandler:
         self.label2nodes[previous_label].remove(node)
         self.label2nodes[label].append(node)
         self.node2attr[node]["label"] = label
-        self.graph[node]["label"] = label
+        self.graph.nodes[node]["label"] = label
 
     def get_nodes(self, label):
         """get_nodes
