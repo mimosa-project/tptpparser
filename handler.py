@@ -365,8 +365,14 @@ class NetworkxHandler:
         del self.node2label[node]
         if node in self.source2targets:
             del self.source2targets[node]
+        for source in self.source2targets:
+            if node in self.source2targets[source]:
+                self.source2targets[source].remove(node)
         if node in self.target2sources:
             del self.target2sources[node]
+        for target in self.target2sources:
+            if node in self.target2sources[target]:
+                self.target2sources[target].remove(node)
         self.graph.remove_node(node)
 
     def remove_edge(self, source, target):
