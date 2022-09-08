@@ -70,8 +70,7 @@ class Converter():
                 json.dump(json_root, f, indent=4)
 
     def normalize_formula(self, formula_root):
-        output_graph = networkx.DiGraph()
-        output_nx = NetworkxHandler(output_graph)
+        output_nx = NetworkxHandler()
         self.remove_redundant_nodes(output_nx, formula_root)
         self.arrange_conjuction(output_nx)
         self.arrange_disjunction(output_nx)
