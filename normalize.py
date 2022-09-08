@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 import os
 import networkx
@@ -111,7 +112,7 @@ class Converter():
         return self.fof_tree.is_token(node) and not label == "!"
 
     def arrange_conjuction(self, output_nx):
-        root = output_nx.get_orphans()[0]
+        root = output_nx.get_orphans().pop()
         # Rootが & ではない
         if not "&" in output_nx.get_label(root):
             # Rootに & を追加する
@@ -122,49 +123,58 @@ class Converter():
         else:
             # dfsで探索し、& が再帰されて使用されている場合は統合する
             def merge_conjunction_recursively(node):
-                for child in output_nx.get_children(node):
-                    label = output_nx.get_label(child)
+                label = output_nx.get_label(node)
                     if label == "&":
-                        grand_children = output_nx.get_children(child)
-                        for grand_child in grand_children:
-                            output_nx.add_edge(root, grand_child)
-                            output_nx.remove_node(child)
-                            merge_conjunction_recursively(grand_child)
-            merge_conjunction_recursively(root)
+                    children = deepcopy(output_nx.get_children(node))
+                    for child in children:
+                        output_nx.add_edge(root, child)
+                        merge_conjunction_recursively(child)
+                    output_nx.remove_node(node)
+
+                children = deepcopy(output_nx.get_children(root))
+                for child in children:
+                    merge_conjunction_recursively(child)
 
     def arrange_disjunction(self, output_nx):
-        conjuction_node = output_nx.get_orphans()[0]
+        conjuction_node = output_nx.get_orphans().pop()
         for child in output_nx.get_children(conjuction_node):
             # & の子が | ではない
             if not "|" in output_nx.get_label(child):
+                output_nx.remove_edge(conjuction_node, child)
                 # &の子に|を追加
                 next_node = output_nx.get_next_node()
                 output_nx.add_node("|")
                 output_nx.add_edge(conjuction_node, next_node)
                 output_nx.add_edge(next_node, child)
             else:
+                disjunction_node = child
                 # dfsで探索し、| が再帰されて使用されている場合は統合する
+
                 def merge_disjunction_recursively(node):
-                    for child in output_nx.get_children(node):
-                        label = output_nx.get_label(child)
+                    label = output_nx.get_label(node)
                         if label == "|":
-                            grand_children = output_nx.get_children(child)
-                            for grand_child in grand_children:
-                                output_nx.add_edge(node, grand_child)
-                                output_nx.remove_edge(child, grand_child)
-                                output_nx.remove_node(node)
+                        children = deepcopy(output_nx.get_children(node))
+                        for child in children:
+                            output_nx.add_edge(disjunction_node, child)
                                 merge_disjunction_recursively(child)
-                merge_disjunction_recursively(child)
+                        output_nx.remove_node(node)
+
+                grand_children = deepcopy(output_nx.get_children(child))
+                for grand_child in grand_children:
+                    merge_disjunction_recursively(grand_child)
 
     def merge_negation(self, output_nx, node=None):
         # dfsで探索していき、notのノードがあれば子にnotを付与し、notノードを削除する
         if node is None:
-            node = output_nx.get_orphans()[0]
-        for child in output_nx.get_children(node):
+            node = output_nx.get_orphans().pop()
+        children = deepcopy(output_nx.get_children(node))
+        for child in children:
             label = output_nx.get_label(node)
             if label == "~":
+                parents = output_nx.get_parents(node)
                 output_nx.remove_node(node)
-                parent = output_nx.get_parents(node)[0]
+                if parents:
+                    parent = parents[0]
                 output_nx.add_edge(parent, child)
                 output_nx.set_label(child, "~" + output_nx.get_label(child))
-            self.merge_negation(child)
+            self.merge_negation(output_nx, child)
