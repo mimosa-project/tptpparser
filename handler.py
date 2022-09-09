@@ -197,10 +197,9 @@ class NetworkxHandler:
         Returns:
             (set): 親ノードがないノードのset
         """
-        orphans = set()
-        for node, _ in self.get_graph_nodes():
-            if not node in self.target2sources:
-                orphans.add(node)
+        all_nodes = set(self.graph.nodes())
+        not_orphans = set(self.target2sources.keys())
+        orphans = all_nodes.difference(not_orphans)
         return orphans
 
     def get_label(self, node):
