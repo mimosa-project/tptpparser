@@ -3,6 +3,7 @@ import json
 import networkx as nx
 import graphviz
 from networkx.readwrite import json_graph
+from copy import copy
 
 
 class GraphvizHandler:
@@ -10,6 +11,7 @@ class GraphvizHandler:
 
     graphvizグラフを操作する関数をまとめたクラス
     """
+
     def __init__(self):
         pass
 
@@ -47,12 +49,13 @@ class NetworkxHandler:
 
     networkxグラフを操作する関数をまとめたクラス
     """
+
     def __init__(self):
         self.graph = nx.DiGraph()
         self.source2targets = defaultdict(list)
         self.target2sources = defaultdict(list)
         self.node2label = dict()
-        self.label2node = dict()
+        self.label2nodes = defaultdict(list)
         self.node2attr = dict()
 
     def load_json(self, path):
@@ -85,8 +88,9 @@ class NetworkxHandler:
         for node, attr in self.get_graph_nodes():
             label = attr["label"]
             self.node2label[node] = label
-            self.label2node[label] = node
-            self.node2attr[node] = attr
+            self.label2nodes[label].append(node)
+            self.node2attr[node] = copy(attr)
+            del self.node2attr[node]["label"]
 
     def get_graph_nodes(self):
         """get_graph_nodes
@@ -105,7 +109,7 @@ class NetworkxHandler:
 
     def get_graph_edges(self):
         """get_graph_edges
-        
+
         networkxグラフのエッジを取得する関数(アトリビュートを含まない)
 
         Returns:
@@ -145,14 +149,14 @@ class NetworkxHandler:
 
     def get_ascendants(self, node):
         """get_ascendants
-        
+
         ノードの祖先全てを取得する関数
 
         Args:
             node (int): ノードID
-        
+
         Returns:
-            (list): ノードの祖先のリスト
+            (set): ノードの祖先のset
         """
         ascendants = set()
 
@@ -167,14 +171,14 @@ class NetworkxHandler:
 
     def get_descendants(self, node):
         """get_descendants
-        
+
         ノードの子孫全てを取得する関数
 
         Args:
             node (int): ノードID
-        
+
         Returns:
-            (list): ノードの子孫のリスト
+            (set): ノードの子孫のset
         """
         decendants = set()
 
@@ -189,21 +193,20 @@ class NetworkxHandler:
 
     def get_orphans(self):
         """get_orphans
-        
+
         親ノードがないノードを取得する関数
 
         Returns:
-            (list): 親ノードがないノードのリスト
+            (set): 親ノードがないノードのset
         """
-        orphans = set()
-        for node, _ in self.get_graph_nodes():
-            if node in self.target2sources:
-                orphans.add(node)
+        all_nodes = set(self.graph.nodes())
+        not_orphans = set(self.target2sources.keys())
+        orphans = all_nodes.difference(not_orphans)
         return orphans
 
     def get_label(self, node):
         """get_label
-        
+
         ノードのラベルを取得する関数
 
         Args:
@@ -216,7 +219,7 @@ class NetworkxHandler:
 
     def set_label(self, node, label):
         """set_label
-        
+
         ノードのラベルを設定する関数
 
         Args:
@@ -225,14 +228,14 @@ class NetworkxHandler:
         """
         previous_label = self.get_label(node)
         self.node2label[node] = label
-        del self.label2node[previous_label]
-        self.label2node[label] = node
+        self.label2nodes[previous_label].remove(node)
+        self.label2nodes[label].append(node)
         self.node2attr[node]["label"] = label
-        self.graph[node]["label"] = label
+        self.graph.nodes[node]["label"] = label
 
-    def get_node(self, label):
-        """get_node
-        
+    def get_nodes(self, label):
+        """get_nodes
+
         ラベルからノードを取得する関数
 
         Args:
@@ -241,21 +244,20 @@ class NetworkxHandler:
         Returns:
             (int): ノードID
         """
-        return self.label2node[label]
+        return self.label2nodes[label]
 
-    def get_attr(self, node, attr_key):
+    def get_attr(self, node):
         """get_attr
 
         ノードのアトリビュートを取得する関数
 
         Args:
             node (int): ノードID
-            attr_key (str): アトリビュートの種類
 
         Returns:
             (str): ノードのアトリビュート
         """
-        return self.node2attr[node][attr_key]
+        return self.node2attr[node]
 
     def get_all_nodes(self):
         """get_all_nodes
@@ -322,7 +324,8 @@ class NetworkxHandler:
         """
         new_node = self.get_next_node()
         self.node2label[new_node] = label
-        self.label2node[label] = new_node
+        self.label2nodes[label].append(new_node)
+        self.node2attr[new_node] = attr
         self.graph.add_node(new_node, label=label, **attr)
         return new_node
 
@@ -341,7 +344,7 @@ class NetworkxHandler:
 
     def add_child(self, parent, label, attr=None):
         """add_child
-        
+
         子ノードを追加する関数
 
         Args:
@@ -360,12 +363,19 @@ class NetworkxHandler:
         Args:
             node (int): 削除するノードID
         """
-        del self.label2node[self.node2label[node]]
+        label = self.get_label(node)
+        self.label2nodes[label].remove(node)
         del self.node2label[node]
         if node in self.source2targets:
             del self.source2targets[node]
+        for source in self.source2targets:
+            if node in self.source2targets[source]:
+                self.source2targets[source].remove(node)
         if node in self.target2sources:
             del self.target2sources[node]
+        for target in self.target2sources:
+            if node in self.target2sources[target]:
+                self.target2sources[target].remove(node)
         self.graph.remove_node(node)
 
     def remove_edge(self, source, target):

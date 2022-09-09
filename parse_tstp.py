@@ -145,7 +145,7 @@ class ParseTstp():
 
     def __init__(self, grammar_path):
         self.grammar_path = grammar_path
-        
+
     def __satisfy_parent_condition(self, node_name, parent_node_name):
         """__satisfy_parent_condition
 
@@ -391,7 +391,7 @@ class ParseTstp():
 
     def get_inference_children(self, annotations_id, ast_handler):
         """get_inference_children
-        
+
         inferenceノードの子ノードを取得する関数
 
         Args:
@@ -408,7 +408,7 @@ class ParseTstp():
         inference = annotations_children[0]
         if not "inference" in ast_handler.get_label(inference):
             return []
-        
+
         return ast_handler.get_children(inference)
 
     def __get_inference_rule(self, annotations_id, ast_handler):
@@ -423,7 +423,8 @@ class ParseTstp():
         Returns:
             inference_rule (str): 式を導出するための操作名
         """
-        inference_children = self.get_inference_children(annotations_id, ast_handler)
+        inference_children = self.get_inference_children(
+            annotations_id, ast_handler)
         if not inference_children:
             return None
         inference_rule_node = inference_children[0]
@@ -442,7 +443,8 @@ class ParseTstp():
         Returns:
             assumption_formulas(list): 参照した式のノードのリスト
         """
-        inference_children = self.get_inference_children(annotations_id, ast_handler)
+        inference_children = self.get_inference_children(
+            annotations_id, ast_handler)
         if not inference_children:
             return []
         assumption_list = inference_children[-1]
@@ -471,17 +473,20 @@ class ParseTstp():
             formula_name_node = fof_children[0]
             annotations_node = fof_children[-1]
             formula_name = ast_handler.get_label(formula_name_node)
-            inference_rule = self.__get_inference_rule(annotations_node, ast_handler)
-            deduction_handler.add_node(formula_name, inference_rule=inference_rule)
+            inference_rule = self.__get_inference_rule(
+                annotations_node, ast_handler)
+            deduction_handler.add_node(
+                formula_name, inference_rule=inference_rule)
             assumption_formulas = self.__get_assumption_formulas(
                 annotations_node, ast_handler)
             for assumption_formula in assumption_formulas:
-                assumption_formula_label = ast_handler.get_label(assumption_formula)
+                assumption_formula_label = ast_handler.get_label(
+                    assumption_formula)
                 deduction_tree_edges.append(
                     (assumption_formula_label, formula_name))
         for source_label, target_label in deduction_tree_edges:
-            source = deduction_handler.get_node(source_label)
-            target = deduction_handler.get_node(target_label)
+            source = deduction_handler.get_nodes(source_label)[0]
+            target = deduction_handler.get_nodes(target_label)[0]
             deduction_handler.add_edge(source, target)
         graph = deduction_handler.get_graph()
         return graph
