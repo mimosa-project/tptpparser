@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy
 import json
 import os
 from networkx.readwrite import json_graph
@@ -127,13 +127,13 @@ class Converter():
             def merge_conjunction_recursively(node):
                 label = output_nx.get_label(node)
                 if label == "&":
-                    children = deepcopy(output_nx.get_children(node))
+                    children = copy(output_nx.get_children(node))
                     for child in children:
                         output_nx.add_edge(root, child)
                         merge_conjunction_recursively(child)
                     output_nx.remove_node(node)
 
-            children = deepcopy(output_nx.get_children(root))
+            children = copy(output_nx.get_children(root))
             for child in children:
                 merge_conjunction_recursively(child)
 
@@ -156,13 +156,13 @@ class Converter():
                 def merge_disjunction_recursively(node):
                     label = output_nx.get_label(node)
                     if label == "|":
-                        children = deepcopy(output_nx.get_children(node))
+                        children = copy(output_nx.get_children(node))
                         for child in children:
                             output_nx.add_edge(disjunction_node, child)
                             merge_disjunction_recursively(child)
                         output_nx.remove_node(node)
 
-                grand_children = deepcopy(output_nx.get_children(child))
+                grand_children = copy(output_nx.get_children(child))
                 for grand_child in grand_children:
                     merge_disjunction_recursively(grand_child)
 
@@ -171,7 +171,7 @@ class Converter():
         if node is None:
             assert len(output_nx.get_orphans()) == 1
             node = output_nx.get_orphans().pop()
-        children = deepcopy(output_nx.get_children(node))
+        children = copy(output_nx.get_children(node))
         for child in children:
             label = output_nx.get_label(node)
             if label == "~":
