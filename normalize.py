@@ -112,6 +112,7 @@ class Converter():
         return self.fof_tree.is_token(node) and not label == "!"
 
     def arrange_conjuction(self, output_nx):
+        assert len(output_nx.get_orphans()) == 1
         root = output_nx.get_orphans().pop()
         # Rootが & ではない
         if not "&" in output_nx.get_label(root):
@@ -136,6 +137,7 @@ class Converter():
                     merge_conjunction_recursively(child)
 
     def arrange_disjunction(self, output_nx):
+        assert len(output_nx.get_orphans()) == 1
         conjuction_node = output_nx.get_orphans().pop()
         for child in output_nx.get_children(conjuction_node):
             # & の子が | ではない
@@ -166,6 +168,7 @@ class Converter():
     def merge_negation(self, output_nx, node=None):
         # dfsで探索していき、notのノードがあれば子にnotを付与し、notノードを削除する
         if node is None:
+            assert len(output_nx.get_orphans()) == 1
             node = output_nx.get_orphans().pop()
         children = deepcopy(output_nx.get_children(node))
         for child in children:
