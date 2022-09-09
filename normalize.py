@@ -132,9 +132,9 @@ class Converter():
                         merge_conjunction_recursively(child)
                     output_nx.remove_node(node)
 
-                children = deepcopy(output_nx.get_children(root))
-                for child in children:
-                    merge_conjunction_recursively(child)
+            children = deepcopy(output_nx.get_children(root))
+            for child in children:
+                merge_conjunction_recursively(child)
 
     def arrange_disjunction(self, output_nx):
         assert len(output_nx.get_orphans()) == 1
