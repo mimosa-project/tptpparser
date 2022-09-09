@@ -84,19 +84,20 @@ class Converter():
         # 以下のノードを削除する
         # 1.Quantifier情報が入っているノード
         # 2.トークン情報が入っていないノード
+        # 型付きの論理式(tffなど)では変数の型情報が消える
         label = self.fof_tree.nx.get_label(node)
         if self.is_reserve_node(node, label):
-            reserve_node = output_nx.get_next_node()
-            last_node = reserve_node
+            new_node = output_nx.get_next_node()
+            last_node = new_node
             output_nx.add_node(label)
             if parent_node is not None:
-                output_nx.add_edge(parent_node, reserve_node)
+                output_nx.add_edge(parent_node, new_node)
         else:
             last_node = parent_node
         for child in self.fof_tree.nx.get_children(node):
-            if last_node == -1:
-                last_node = None
             if label == "!":
+                # logic_formulaだけが現れるケースには未対応
+                # 全称量化子の子がvariable_listのみのケースの場合
                 if len(self.fof_tree.nx.get_children(node)) == 1:
                     break
                 # 全称量化子の場合は右の子ノードのみを残す
