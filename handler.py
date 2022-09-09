@@ -3,6 +3,7 @@ import json
 import networkx as nx
 import graphviz
 from networkx.readwrite import json_graph
+from copy import copy
 
 
 class GraphvizHandler:
@@ -88,7 +89,8 @@ class NetworkxHandler:
             label = attr["label"]
             self.node2label[node] = label
             self.label2nodes[label].append(node)
-            self.node2attr[node] = attr
+            self.node2attr[node] = copy(attr)
+            del self.node2attr[node]["label"]
 
     def get_graph_nodes(self):
         """get_graph_nodes

@@ -89,7 +89,8 @@ class Converter():
         if self.is_reserve_node(node, label):
             new_node = output_nx.get_next_node()
             last_node = new_node
-            output_nx.add_node(label)
+            attr = self.fof_tree.nx.get_attr(node)
+            output_nx.add_node(label, **attr)
             if parent_node is not None:
                 output_nx.add_edge(parent_node, new_node)
         else:
@@ -118,7 +119,7 @@ class Converter():
         if not "&" in output_nx.get_label(root):
             # Rootに & を追加する
             node = output_nx.get_next_node()
-            output_nx.add_node("&")
+            output_nx.add_node("&", token_type="AND_CONNECTIVE")
             output_nx.add_edge(node, root)
 
         else:
@@ -145,7 +146,7 @@ class Converter():
                 output_nx.remove_edge(conjuction_node, child)
                 # &の子に|を追加
                 next_node = output_nx.get_next_node()
-                output_nx.add_node("|")
+                output_nx.add_node("|", token_type="VLINE")
                 output_nx.add_edge(conjuction_node, next_node)
                 output_nx.add_edge(next_node, child)
             else:
