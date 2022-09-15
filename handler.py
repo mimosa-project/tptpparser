@@ -57,6 +57,7 @@ class NetworkxHandler:
         self.node2label = dict()
         self.label2nodes = defaultdict(list)
         self.node2attr = dict()
+        self.next_node = 0
 
     def load_json(self, path):
         """load_json
@@ -80,6 +81,7 @@ class NetworkxHandler:
             graph (networkx.classes.digraph.DiGraph): networkxグラフ
         """
         self.graph = graph
+        self.next_node = max(self.graph.nodes()) + 1
 
         for source, target in self.get_graph_edges():
             self.source2targets[source].append(target)
@@ -287,7 +289,7 @@ class NetworkxHandler:
         Returns:
             (int): 次のノードID
         """
-        return len(self.get_graph_nodes())
+        return self.next_node
 
     def get_last_node(self):
         """get_last_node
@@ -323,6 +325,7 @@ class NetworkxHandler:
             (int): 追加したノードのID
         """
         new_node = self.get_next_node()
+        self.next_node += 1
         self.node2label[new_node] = label
         self.label2nodes[label].append(new_node)
         self.node2attr[new_node] = attr
