@@ -140,7 +140,8 @@ class Converter():
     def arrange_disjunction(self, output_nx):
         assert len(output_nx.get_orphans()) == 1
         conjuction_node = output_nx.get_orphans().pop()
-        for child in output_nx.get_children(conjuction_node):
+        children = copy(output_nx.get_children(conjuction_node))
+        for child in children:
             # & の子が | ではない
             if not "|" in output_nx.get_label(child):
                 output_nx.remove_edge(conjuction_node, child)
