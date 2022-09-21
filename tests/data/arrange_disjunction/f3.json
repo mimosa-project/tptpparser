@@ -1,0 +1,41 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 0
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 2
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 3
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 4
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 4
+        },
+        {
+            "source": 0,
+            "target": 2
+        },
+        {
+            "source": 0,
+            "target": 3
+        }
+    ]
+}

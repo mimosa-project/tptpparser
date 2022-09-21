@@ -1,0 +1,50 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "f5",
+            "inference_rule": "test",
+            "id": 0
+        },
+        {
+            "label": "f4",
+            "inference_rule": "test",
+            "id": 1
+        },
+        {
+            "label": "f3",
+            "inference_rule": "test",
+            "id": 2
+        },
+        {
+            "label": "f2",
+            "inference_rule": "cnf_transformation",
+            "id": 3
+        },
+        {
+            "label": "f1",
+            "inference_rule": null,
+            "id": 4
+        }
+    ],
+    "links": [
+        {
+            "source": 3,
+            "target": 0
+        },
+        {
+            "source": 3,
+            "target": 1
+        },
+        {
+            "source": 3,
+            "target": 2
+        },
+        {
+            "source": 4,
+            "target": 3
+        }
+    ]
+}

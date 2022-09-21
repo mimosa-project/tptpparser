@@ -1,0 +1,122 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 0
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 2
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 4
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 5
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 6
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 7
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 9
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 10
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 11
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 12
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 14
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 15
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 16
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 12
+        },
+        {
+            "source": 0,
+            "target": 2
+        },
+        {
+            "source": 0,
+            "target": 7
+        },
+        {
+            "source": 2,
+            "target": 6
+        },
+        {
+            "source": 2,
+            "target": 4
+        },
+        {
+            "source": 2,
+            "target": 5
+        },
+        {
+            "source": 7,
+            "target": 11
+        },
+        {
+            "source": 7,
+            "target": 9
+        },
+        {
+            "source": 7,
+            "target": 10
+        },
+        {
+            "source": 12,
+            "target": 16
+        },
+        {
+            "source": 12,
+            "target": 14
+        },
+        {
+            "source": 12,
+            "target": 15
+        }
+    ]
+}
