@@ -1,0 +1,974 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "tptp_root",
+            "id": 0
+        },
+        {
+            "label": "fof",
+            "token_type": "FOF",
+            "id": 1
+        },
+        {
+            "label": "f5",
+            "token_type": "NAME",
+            "id": 2
+        },
+        {
+            "label": "plain",
+            "token_type": "FORMULA_ROLE",
+            "id": 3
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 4
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 5
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 6
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 7
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 8
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 9
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 10
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 11
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 12
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 13
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 14
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 15
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 16
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 17
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 18
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 19
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 20
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 21
+        },
+        {
+            "label": "~",
+            "token_type": "UNARY_CONNECTIVE",
+            "id": 22
+        },
+        {
+            "label": "test",
+            "token_type": "FUNCTOR",
+            "id": 23
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 24
+        },
+        {
+            "label": "~",
+            "token_type": "UNARY_CONNECTIVE",
+            "id": 25
+        },
+        {
+            "label": "test",
+            "token_type": "FUNCTOR",
+            "id": 26
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 27
+        },
+        {
+            "label": "~",
+            "token_type": "UNARY_CONNECTIVE",
+            "id": 28
+        },
+        {
+            "label": "test",
+            "token_type": "FUNCTOR",
+            "id": 29
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 30
+        },
+        {
+            "label": "annotations",
+            "id": 31
+        },
+        {
+            "label": "inference",
+            "token_type": "ATOMIC_WORD",
+            "id": 32
+        },
+        {
+            "label": "test",
+            "token_type": "ATOMIC_WORD",
+            "id": 33
+        },
+        {
+            "label": "general_list",
+            "id": 34
+        },
+        {
+            "label": "general_list",
+            "id": 35
+        },
+        {
+            "label": "f2",
+            "token_type": "ATOMIC_WORD",
+            "id": 36
+        },
+        {
+            "label": "optional_info",
+            "id": 37
+        },
+        {
+            "label": "fof",
+            "token_type": "FOF",
+            "id": 38
+        },
+        {
+            "label": "f4",
+            "token_type": "NAME",
+            "id": 39
+        },
+        {
+            "label": "plain",
+            "token_type": "FORMULA_ROLE",
+            "id": 40
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 41
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 42
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 43
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 44
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 45
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 46
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 47
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 48
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 49
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 50
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 51
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 52
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 53
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 54
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 55
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 56
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 57
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 58
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 59
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 60
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 61
+        },
+        {
+            "label": "annotations",
+            "id": 62
+        },
+        {
+            "label": "inference",
+            "token_type": "ATOMIC_WORD",
+            "id": 63
+        },
+        {
+            "label": "test",
+            "token_type": "ATOMIC_WORD",
+            "id": 64
+        },
+        {
+            "label": "general_list",
+            "id": 65
+        },
+        {
+            "label": "general_list",
+            "id": 66
+        },
+        {
+            "label": "f2",
+            "token_type": "ATOMIC_WORD",
+            "id": 67
+        },
+        {
+            "label": "optional_info",
+            "id": 68
+        },
+        {
+            "label": "fof",
+            "token_type": "FOF",
+            "id": 69
+        },
+        {
+            "label": "f3",
+            "token_type": "NAME",
+            "id": 70
+        },
+        {
+            "label": "plain",
+            "token_type": "FORMULA_ROLE",
+            "id": 71
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 72
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 73
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 74
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 75
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 76
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 77
+        },
+        {
+            "label": "annotations",
+            "id": 78
+        },
+        {
+            "label": "inference",
+            "token_type": "ATOMIC_WORD",
+            "id": 79
+        },
+        {
+            "label": "test",
+            "token_type": "ATOMIC_WORD",
+            "id": 80
+        },
+        {
+            "label": "general_list",
+            "id": 81
+        },
+        {
+            "label": "general_list",
+            "id": 82
+        },
+        {
+            "label": "f2",
+            "token_type": "ATOMIC_WORD",
+            "id": 83
+        },
+        {
+            "label": "optional_info",
+            "id": 84
+        },
+        {
+            "label": "fof",
+            "token_type": "FOF",
+            "id": 85
+        },
+        {
+            "label": "f2",
+            "token_type": "NAME",
+            "id": 86
+        },
+        {
+            "label": "plain",
+            "token_type": "FORMULA_ROLE",
+            "id": 87
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 88
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 89
+        },
+        {
+            "label": "annotations",
+            "id": 90
+        },
+        {
+            "label": "inference",
+            "token_type": "ATOMIC_WORD",
+            "id": 91
+        },
+        {
+            "label": "cnf_transformation",
+            "token_type": "ATOMIC_WORD",
+            "id": 92
+        },
+        {
+            "label": "general_list",
+            "id": 93
+        },
+        {
+            "label": "general_list",
+            "id": 94
+        },
+        {
+            "label": "f1",
+            "token_type": "ATOMIC_WORD",
+            "id": 95
+        },
+        {
+            "label": "optional_info",
+            "id": 96
+        },
+        {
+            "label": "fof",
+            "token_type": "FOF",
+            "id": 97
+        },
+        {
+            "label": "f1",
+            "token_type": "NAME",
+            "id": 98
+        },
+        {
+            "label": "axiom",
+            "token_type": "FORMULA_ROLE",
+            "id": 99
+        },
+        {
+            "label": "fof_logic_formula",
+            "id": 100
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 101
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 102
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 103
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 104
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 105
+        },
+        {
+            "label": "annotations",
+            "id": 106
+        },
+        {
+            "label": "file",
+            "token_type": "ATOMIC_WORD",
+            "id": 107
+        },
+        {
+            "label": "'test.p'",
+            "token_type": "ATOMIC_WORD",
+            "id": 108
+        },
+        {
+            "label": "unknown",
+            "token_type": "ATOMIC_WORD",
+            "id": 109
+        },
+        {
+            "label": "optional_info",
+            "id": 110
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 1
+        },
+        {
+            "source": 0,
+            "target": 38
+        },
+        {
+            "source": 0,
+            "target": 69
+        },
+        {
+            "source": 0,
+            "target": 85
+        },
+        {
+            "source": 0,
+            "target": 97
+        },
+        {
+            "source": 1,
+            "target": 2
+        },
+        {
+            "source": 1,
+            "target": 3
+        },
+        {
+            "source": 1,
+            "target": 4
+        },
+        {
+            "source": 1,
+            "target": 31
+        },
+        {
+            "source": 4,
+            "target": 5
+        },
+        {
+            "source": 5,
+            "target": 6
+        },
+        {
+            "source": 5,
+            "target": 19
+        },
+        {
+            "source": 6,
+            "target": 7
+        },
+        {
+            "source": 6,
+            "target": 13
+        },
+        {
+            "source": 7,
+            "target": 8
+        },
+        {
+            "source": 8,
+            "target": 9
+        },
+        {
+            "source": 8,
+            "target": 12
+        },
+        {
+            "source": 9,
+            "target": 10
+        },
+        {
+            "source": 9,
+            "target": 11
+        },
+        {
+            "source": 13,
+            "target": 14
+        },
+        {
+            "source": 14,
+            "target": 15
+        },
+        {
+            "source": 14,
+            "target": 18
+        },
+        {
+            "source": 15,
+            "target": 16
+        },
+        {
+            "source": 15,
+            "target": 17
+        },
+        {
+            "source": 19,
+            "target": 20
+        },
+        {
+            "source": 20,
+            "target": 21
+        },
+        {
+            "source": 20,
+            "target": 28
+        },
+        {
+            "source": 21,
+            "target": 22
+        },
+        {
+            "source": 21,
+            "target": 25
+        },
+        {
+            "source": 22,
+            "target": 23
+        },
+        {
+            "source": 23,
+            "target": 24
+        },
+        {
+            "source": 25,
+            "target": 26
+        },
+        {
+            "source": 26,
+            "target": 27
+        },
+        {
+            "source": 28,
+            "target": 29
+        },
+        {
+            "source": 29,
+            "target": 30
+        },
+        {
+            "source": 31,
+            "target": 32
+        },
+        {
+            "source": 31,
+            "target": 37
+        },
+        {
+            "source": 32,
+            "target": 33
+        },
+        {
+            "source": 32,
+            "target": 34
+        },
+        {
+            "source": 32,
+            "target": 35
+        },
+        {
+            "source": 35,
+            "target": 36
+        },
+        {
+            "source": 38,
+            "target": 39
+        },
+        {
+            "source": 38,
+            "target": 40
+        },
+        {
+            "source": 38,
+            "target": 41
+        },
+        {
+            "source": 38,
+            "target": 62
+        },
+        {
+            "source": 41,
+            "target": 42
+        },
+        {
+            "source": 42,
+            "target": 43
+        },
+        {
+            "source": 42,
+            "target": 56
+        },
+        {
+            "source": 43,
+            "target": 44
+        },
+        {
+            "source": 43,
+            "target": 50
+        },
+        {
+            "source": 44,
+            "target": 45
+        },
+        {
+            "source": 45,
+            "target": 46
+        },
+        {
+            "source": 45,
+            "target": 49
+        },
+        {
+            "source": 46,
+            "target": 47
+        },
+        {
+            "source": 46,
+            "target": 48
+        },
+        {
+            "source": 50,
+            "target": 51
+        },
+        {
+            "source": 51,
+            "target": 52
+        },
+        {
+            "source": 51,
+            "target": 55
+        },
+        {
+            "source": 52,
+            "target": 53
+        },
+        {
+            "source": 52,
+            "target": 54
+        },
+        {
+            "source": 56,
+            "target": 57
+        },
+        {
+            "source": 57,
+            "target": 58
+        },
+        {
+            "source": 57,
+            "target": 61
+        },
+        {
+            "source": 58,
+            "target": 59
+        },
+        {
+            "source": 58,
+            "target": 60
+        },
+        {
+            "source": 62,
+            "target": 63
+        },
+        {
+            "source": 62,
+            "target": 68
+        },
+        {
+            "source": 63,
+            "target": 64
+        },
+        {
+            "source": 63,
+            "target": 65
+        },
+        {
+            "source": 63,
+            "target": 66
+        },
+        {
+            "source": 66,
+            "target": 67
+        },
+        {
+            "source": 69,
+            "target": 70
+        },
+        {
+            "source": 69,
+            "target": 71
+        },
+        {
+            "source": 69,
+            "target": 72
+        },
+        {
+            "source": 69,
+            "target": 78
+        },
+        {
+            "source": 72,
+            "target": 73
+        },
+        {
+            "source": 73,
+            "target": 74
+        },
+        {
+            "source": 73,
+            "target": 77
+        },
+        {
+            "source": 74,
+            "target": 75
+        },
+        {
+            "source": 74,
+            "target": 76
+        },
+        {
+            "source": 78,
+            "target": 79
+        },
+        {
+            "source": 78,
+            "target": 84
+        },
+        {
+            "source": 79,
+            "target": 80
+        },
+        {
+            "source": 79,
+            "target": 81
+        },
+        {
+            "source": 79,
+            "target": 82
+        },
+        {
+            "source": 82,
+            "target": 83
+        },
+        {
+            "source": 85,
+            "target": 86
+        },
+        {
+            "source": 85,
+            "target": 87
+        },
+        {
+            "source": 85,
+            "target": 88
+        },
+        {
+            "source": 85,
+            "target": 90
+        },
+        {
+            "source": 88,
+            "target": 89
+        },
+        {
+            "source": 90,
+            "target": 91
+        },
+        {
+            "source": 90,
+            "target": 96
+        },
+        {
+            "source": 91,
+            "target": 92
+        },
+        {
+            "source": 91,
+            "target": 93
+        },
+        {
+            "source": 91,
+            "target": 94
+        },
+        {
+            "source": 94,
+            "target": 95
+        },
+        {
+            "source": 97,
+            "target": 98
+        },
+        {
+            "source": 97,
+            "target": 99
+        },
+        {
+            "source": 97,
+            "target": 100
+        },
+        {
+            "source": 97,
+            "target": 106
+        },
+        {
+            "source": 100,
+            "target": 101
+        },
+        {
+            "source": 101,
+            "target": 102
+        },
+        {
+            "source": 101,
+            "target": 105
+        },
+        {
+            "source": 102,
+            "target": 103
+        },
+        {
+            "source": 102,
+            "target": 104
+        },
+        {
+            "source": 106,
+            "target": 107
+        },
+        {
+            "source": 106,
+            "target": 110
+        },
+        {
+            "source": 107,
+            "target": 108
+        },
+        {
+            "source": 107,
+            "target": 109
+        }
+    ]
+}

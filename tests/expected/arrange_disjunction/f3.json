@@ -1,0 +1,68 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 0
+        },
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 2
+        },
+        {
+            "label": "b",
+            "token_type": "CONSTANT",
+            "id": 3
+        },
+        {
+            "label": "c",
+            "token_type": "CONSTANT",
+            "id": 4
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 5
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 6
+        },
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 7
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 5
+        },
+        {
+            "source": 0,
+            "target": 6
+        },
+        {
+            "source": 0,
+            "target": 7
+        },
+        {
+            "source": 5,
+            "target": 4
+        },
+        {
+            "source": 6,
+            "target": 2
+        },
+        {
+            "source": 7,
+            "target": 3
+        }
+    ]
+}

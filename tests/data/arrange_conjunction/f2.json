@@ -1,0 +1,13 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "a",
+            "token_type": "CONSTANT",
+            "id": 0
+        }
+    ],
+    "links": []
+}
