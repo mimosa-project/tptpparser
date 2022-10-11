@@ -182,7 +182,7 @@ class Converter():
                     token_type = output_nx.get_attr(node)["token_type"]
                     if not token_type in token_type2node:
                         new_node = output_nx.add_node(
-                            token_type, token_type="coodinate")
+                            token_type, token_type="coordinate")
                         token_type2node[token_type] = new_node
                     output_nx.add_edge(node, token_type2node[token_type])
 
