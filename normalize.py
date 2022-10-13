@@ -177,14 +177,12 @@ class Converter():
             if not self.is_logic_symbol(label) and len(label2nodes[label]) > 1:
                 # 1つのラベルに複数のノードが存在する場合
                 # それらを結合するノードを追加する
-                token_type2node = dict()
+                token_type = output_nx.get_attr(
+                    label2nodes[label][0])["token_type"]
+                new_node = output_nx.add_node(
+                    token_type, token_type="coordinate")
                 for node in label2nodes[label]:
-                    token_type = output_nx.get_attr(node)["token_type"]
-                    if not token_type in token_type2node:
-                        new_node = output_nx.add_node(
-                            token_type, token_type="coordinate")
-                        token_type2node[token_type] = new_node
-                    output_nx.add_edge(node, token_type2node[token_type])
+                    output_nx.add_edge(node, new_node)
 
     def merge_negation(self, output_nx, node=None):
         # dfsで探索していき、notのノードがあれば子にnotを付与し、notノードを削除する
