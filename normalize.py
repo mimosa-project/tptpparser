@@ -77,6 +77,7 @@ class Converter():
         self.remove_redundant_nodes(output_nx, formula_root)
         self.arrange_conjuction(output_nx)
         self.arrange_disjunction(output_nx)
+        self.coordinate_node(output_nx)
         self.merge_negation(output_nx)
         return output_nx.get_graph()
 
@@ -166,6 +167,22 @@ class Converter():
                 grand_children = copy(output_nx.get_children(child))
                 for grand_child in grand_children:
                     merge_disjunction_recursively(grand_child)
+
+    def is_logic_symbol(self, label):
+        return label in {"&", "|", "~"}
+
+    def coordinate_node(self, output_nx):
+        label2nodes = copy(output_nx.label2nodes)
+        for label in label2nodes:
+            if not self.is_logic_symbol(label) and len(label2nodes[label]) > 1:
+                # 1つのラベルに複数のノードが存在する場合
+                # それらを結合するノードを追加する
+                token_type = output_nx.get_attr(
+                    label2nodes[label][0])["token_type"]
+                new_node = output_nx.add_node(
+                    token_type, token_type="coordinate")
+                for node in label2nodes[label]:
+                    output_nx.add_edge(node, new_node)
 
     def merge_negation(self, output_nx, node=None):
         # dfsで探索していき、notのノードがあれば子にnotを付与し、notノードを削除する
