@@ -5,7 +5,7 @@
     "nodes": [
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 0
         }
     ],

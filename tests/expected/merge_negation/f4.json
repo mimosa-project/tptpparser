@@ -15,17 +15,17 @@
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 4
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 5
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 6
         },
         {
@@ -35,17 +35,17 @@
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 9
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 10
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 11
         },
         {
@@ -55,18 +55,33 @@
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 14
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 15
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 16
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 17
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 18
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 19
         }
     ],
     "links": [
@@ -95,6 +110,18 @@
             "target": 5
         },
         {
+            "source": 4,
+            "target": 17
+        },
+        {
+            "source": 5,
+            "target": 18
+        },
+        {
+            "source": 6,
+            "target": 19
+        },
+        {
             "source": 7,
             "target": 11
         },
@@ -107,6 +134,18 @@
             "target": 10
         },
         {
+            "source": 9,
+            "target": 18
+        },
+        {
+            "source": 10,
+            "target": 17
+        },
+        {
+            "source": 11,
+            "target": 19
+        },
+        {
             "source": 12,
             "target": 16
         },
@@ -117,6 +156,18 @@
         {
             "source": 12,
             "target": 15
+        },
+        {
+            "source": 14,
+            "target": 19
+        },
+        {
+            "source": 15,
+            "target": 17
+        },
+        {
+            "source": 16,
+            "target": 18
         }
     ]
 }

@@ -15,17 +15,17 @@
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 4
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 5
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 6
         },
         {
@@ -35,17 +35,17 @@
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 9
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 10
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 11
         },
         {
@@ -60,7 +60,7 @@
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 16
         },
         {
@@ -70,7 +70,7 @@
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 19
         },
         {
@@ -80,8 +80,28 @@
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 22
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 23
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 24
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 25
+        },
+        {
+            "label": "FUNCTOR",
+            "token_type": "coordinate",
+            "id": 26
         }
     ],
     "links": [
@@ -110,6 +130,18 @@
             "target": 5
         },
         {
+            "source": 4,
+            "target": 23
+        },
+        {
+            "source": 5,
+            "target": 24
+        },
+        {
+            "source": 6,
+            "target": 25
+        },
+        {
             "source": 7,
             "target": 11
         },
@@ -120,6 +152,18 @@
         {
             "source": 7,
             "target": 10
+        },
+        {
+            "source": 9,
+            "target": 24
+        },
+        {
+            "source": 10,
+            "target": 23
+        },
+        {
+            "source": 11,
+            "target": 25
         },
         {
             "source": 12,
@@ -138,12 +182,36 @@
             "target": 16
         },
         {
+            "source": 15,
+            "target": 26
+        },
+        {
+            "source": 16,
+            "target": 25
+        },
+        {
             "source": 18,
             "target": 19
         },
         {
+            "source": 18,
+            "target": 26
+        },
+        {
+            "source": 19,
+            "target": 23
+        },
+        {
             "source": 21,
             "target": 22
+        },
+        {
+            "source": 21,
+            "target": 26
+        },
+        {
+            "source": 22,
+            "target": 24
         }
     ]
 }

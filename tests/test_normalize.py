@@ -107,6 +107,23 @@ class TestConverter:
                 expected_json = json.load(f)
             assert json_root == expected_json
 
+    def test_coordinate_node(self, get_converter):
+        converter = get_converter
+        input_dir = os.path.join("data", "coordinate_node")
+        input_files = os.listdir(input_dir)
+        for file_name in input_files:
+            fof_name = file_name.split(".")[0]
+            output_nx = NetworkxHandler()
+            output_nx.load_json(os.path.join(input_dir, file_name))
+            converter.coordinate_node(output_nx)
+            graph = output_nx.get_graph()
+            json_root = json_graph.node_link_data(graph)
+            expected_json_path = os.path.join(
+                "expected", "coordinate_node", f"{fof_name}.json")
+            with open(expected_json_path, "r") as f:
+                expected_json = json.load(f)
+            assert json_root == expected_json
+
     def test_merge_negation(self, get_converter):
         converter = get_converter
         input_dir = os.path.join("data", "merge_negation")
