@@ -25,17 +25,17 @@
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 4
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 5
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 6
         },
         {
@@ -50,17 +50,17 @@
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 9
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 10
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 11
         },
         {
@@ -75,17 +75,17 @@
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 14
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 15
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 16
         }
     ],

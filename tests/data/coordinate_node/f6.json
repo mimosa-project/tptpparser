@@ -1,0 +1,104 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "label": "|",
+            "token_type": "VLINE",
+            "id": 0
+        },
+        {
+            "label": "=",
+            "token_type": "INFIX_EQUALITY",
+            "id": 2
+        },
+        {
+            "label": "a",
+            "token_type": "FUNCTOR",
+            "id": 3
+        },
+        {
+            "label": "2.4",
+            "token_type": "REAL",
+            "id": 4
+        },
+        {
+            "label": "=",
+            "token_type": "INFIX_EQUALITY",
+            "id": 5
+        },
+        {
+            "label": "b",
+            "token_type": "FUNCTOR",
+            "id": 6
+        },
+        {
+            "label": "2.4",
+            "token_type": "REAL",
+            "id": 7
+        },
+        {
+            "label": "=",
+            "token_type": "INFIX_EQUALITY",
+            "id": 8
+        },
+        {
+            "label": "c",
+            "token_type": "FUNCTOR",
+            "id": 9
+        },
+        {
+            "label": "5",
+            "token_type": "INTEGER",
+            "id": 10
+        },
+        {
+            "label": "&",
+            "token_type": "AND_CONNECTIVE",
+            "id": 11
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 8
+        },
+        {
+            "source": 0,
+            "target": 2
+        },
+        {
+            "source": 0,
+            "target": 5
+        },
+        {
+            "source": 2,
+            "target": 3
+        },
+        {
+            "source": 2,
+            "target": 4
+        },
+        {
+            "source": 5,
+            "target": 6
+        },
+        {
+            "source": 5,
+            "target": 7
+        },
+        {
+            "source": 8,
+            "target": 9
+        },
+        {
+            "source": 8,
+            "target": 10
+        },
+        {
+            "source": 11,
+            "target": 0
+        }
+    ]
+}

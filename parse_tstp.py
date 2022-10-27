@@ -16,7 +16,7 @@ from handler import NetworkxHandler
 #       * ただし、例外的に残す場合は記述している(方針9)
 # 4. ノード名 : ノード名 |...| "(" ノード名 ")" or "[" ノード名 "]"が親ノードで子が"(" ノード名 ")" or "[" ノード名 "]"のときの子ノードは残す
 #   * NODE_KEEP_RULEのkeyにノード名があり、value(map)のparent(key)のvalueと親ノード名が一致するかどうかで判定
-# 5. thf_atom_typing : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
+# 5. thf_atom_typing : untyped_atom ":" thf_top_level_type | "(" thf_atom_typing ")"のように文法のノード名と"(" ノード名 ")"のノード名が同じなら飛ばす
 #   * NODE_KEEP_RULEのkeyにノード名があるかどうかで判定
 # 6. ノード名 トークン(+など)or記号(@など) ノード名、記号"("ノード名...")"、 トークン"("ノード名...")"、 トークン ノード名...となっている場合はそのノードにトークン、記号の情報を付与する
 #    このとき、付与したトークンは消す
@@ -76,7 +76,7 @@ NODE_KEEP_RULE = {
     "fof_and_formula": {"child": "AND_CONNECTIVE"},
     "fof_annotated": {"child": "FOF"},
     "fof_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
-    "fof_defined_infix_formula": {"child": "DEFINED_INFIX_PRED"},
+    "fof_defined_infix_formula": {"child": "INFIX_EQUALITY"},
     "fof_defined_plain_term": {"child": "DEFINED_FUNCTOR"},
     "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
     "fof_or_formula": {"child": "VLINE"},
@@ -95,7 +95,7 @@ NODE_KEEP_RULE = {
     "tff_annotated": {"child": "TFF"},
     "tff_atomic_type": {"child": "TYPE_FUNCTOR"},
     "tff_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
-    "tff_defined_infix": {"child": "DEFINED_INFIX_PRED"},
+    "tff_defined_infix": {"child": "INFIX_EQUALITY"},
     "tff_defined_plain": {"child": "DEFINED_FUNCTOR"},
     "tff_infix_unary": {"child": "INFIX_INEQUALITY"},
     "tfx_let_defn": {"child": "ASSIGNMENT"},
@@ -114,7 +114,7 @@ NODE_KEEP_RULE = {
     "thf_apply_formula": {"child": "APPLY_SYMBOL"},
     "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
     "thf_conditional": {"child": "DOLLAR_ITE"},
-    "thf_defined_infix": {"child": "DEFINED_INFIX_PRED"},
+    "thf_defined_infix": {"child": "INFIX_EQUALITY"},
     "thf_fof_function": {"child": ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]},
     "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
     "thf_let": {"child": "DOLLAR_LET"},

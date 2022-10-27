@@ -10,17 +10,17 @@
         },
         {
             "label": "a",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 2
         },
         {
             "label": "b",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 3
         },
         {
             "label": "c",
-            "token_type": "CONSTANT",
+            "token_type": "FUNCTOR",
             "id": 4
         },
         {

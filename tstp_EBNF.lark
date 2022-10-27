@@ -39,14 +39,14 @@ thf_typed_variable   : VARIABLE ":" thf_top_level_type | VARIABLE //VARIABLE追�
 thf_unary_formula    : thf_prefix_unary | thf_infix_unary
 thf_prefix_unary     : UNARY_CONNECTIVE thf_preunit_formula
 thf_infix_unary      : thf_unitary_term INFIX_INEQUALITY thf_unitary_term
-thf_atomic_formula   : thf_plain_atomic | thf_defined_atomic | THF_SYSTEM_ATOMIC | thf_fof_function
-thf_plain_atomic     : CONSTANT | thf_tuple 
+thf_atomic_formula   : thf_plain_atomic | thf_defined_atomic | thf_system_atomic | thf_fof_function
+thf_plain_atomic     : constant | thf_tuple 
 
-thf_defined_atomic   : DEFINED_CONSTANT | thf_conditional | thf_let | "(" THF_CONN_TERM ")" | THF_DEFINED_TERM
-THF_DEFINED_TERM     : DEFINED_TERM | TH1_DEFINED_TERM
-thf_defined_infix    : thf_unitary_term DEFINED_INFIX_PRED thf_unitary_term
+thf_defined_atomic   : defined_constant | thf_conditional | thf_let | "(" thf_conn_term ")" | thf_defined_term
+thf_defined_term     : defined_term | TH1_DEFINED_TERM
+thf_defined_infix    : thf_unitary_term INFIX_EQUALITY thf_unitary_term
 
-THF_SYSTEM_ATOMIC    : SYSTEM_CONSTANT
+thf_system_atomic    : system_constant
 
 thf_fof_function     : FUNCTOR "(" thf_arguments ")" | DEFINED_FUNCTOR "(" thf_arguments ")" | SYSTEM_FUNCTOR "(" thf_arguments ")"
 
@@ -61,11 +61,11 @@ thf_let_defn_list    : thf_let_defn | thf_let_defn "," thf_let_defn_list
 thf_unitary_term     : thf_atomic_formula | VARIABLE | "(" thf_logic_formula ")"
 thf_tuple            : "[]" | "[" thf_formula_list "]"
 thf_formula_list     : thf_logic_formula | thf_logic_formula "," thf_formula_list
-THF_CONN_TERM        : NONASSOC_CONNECTIVE | ASSOC_CONNECTIVE |INFIX_EQUALITY | INFIX_INEQUALITY | UNARY_CONNECTIVE
+thf_conn_term        : NONASSOC_CONNECTIVE | ASSOC_CONNECTIVE |INFIX_EQUALITY | INFIX_INEQUALITY | UNARY_CONNECTIVE
 
 thf_arguments        : thf_formula_list
 
-thf_atom_typing      : UNTYPED_ATOM ":" thf_top_level_type | "(" thf_atom_typing ")" | ARROW ":" thf_top_level_type //ARROW ":" thf_top_level_typeを追加
+thf_atom_typing      : untyped_atom ":" thf_top_level_type | "(" thf_atom_typing ")" | ARROW ":" thf_top_level_type //ARROW ":" thf_top_level_typeを追加
 thf_top_level_type   : thf_unitary_type | thf_mapping_type | thf_apply_type
 
 thf_unitary_type     : thf_unitary_formula
@@ -82,7 +82,7 @@ thf_xprod_type       : thf_unitary_type STAR thf_unitary_type | thf_xprod_type S
 
 thf_union_type       : thf_unitary_type PLUS thf_unitary_type | thf_union_type PLUS thf_unitary_type
 
-thf_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM
+thf_subtype          : untyped_atom SUBTYPE_SIGN atom
 
 thf_sequent          : thf_tuple GENTZEN_ARROW thf_tuple | "(" thf_sequent ")"
 
@@ -105,8 +105,8 @@ tff_or_formula       : tff_unit_formula VLINE tff_unit_formula | tff_or_formula 
 tff_and_formula      : tff_unit_formula AND_CONNECTIVE tff_unit_formula | tff_and_formula AND_CONNECTIVE tff_unit_formula
 tff_unit_formula     : tff_unitary_formula | tff_unary_formula | tff_defined_infix
 tff_preunit_formula  : tff_unitary_formula | tff_prefix_unary
-tff_unitary_formula  : tff_quantified_formula | tff_atomic_formula | TFX_UNITARY_FORMULA | "(" tff_logic_formula ")"
-TFX_UNITARY_FORMULA  : VARIABLE
+tff_unitary_formula  : tff_quantified_formula | tff_atomic_formula | tfx_unitary_formula | "(" tff_logic_formula ")"
+tfx_unitary_formula  : VARIABLE
 tff_quantified_formula : FOF_QUANTIFIER "[" tff_variable_list "]" ":" tff_unit_formula
 
 tff_variable_list    : tff_variable | tff_variable "," tff_variable_list
@@ -118,15 +118,15 @@ tff_prefix_unary     : UNARY_CONNECTIVE tff_preunit_formula
 tff_infix_unary      : tff_unitary_term INFIX_INEQUALITY tff_unitary_term
 
 tff_atomic_formula   : tff_plain_atomic | tff_defined_atomic | tff_system_atomic
-tff_plain_atomic     : CONSTANT | FUNCTOR "(" tff_arguments ")"
+tff_plain_atomic     : constant | FUNCTOR "(" tff_arguments ")"
 //tff_plain_atomic     : PROPOSITION | PREDICATE"("tff_arguments")"
 tff_defined_atomic   : tff_defined_plain 
 
-tff_defined_plain    : DEFINED_CONSTANT | DEFINED_FUNCTOR "(" tff_arguments ")" | tfx_conditional | tfx_let
+tff_defined_plain    : defined_constant | DEFINED_FUNCTOR "(" tff_arguments ")" | tfx_conditional | tfx_let
 //tff_defined_plain    : DEFINED_PROPOSITION | DEFINED_PREDICATE"("tff_arguments")" | tfx_conditional | tfx_let
 
-tff_defined_infix    : tff_unitary_term DEFINED_INFIX_PRED tff_unitary_term
-tff_system_atomic    : SYSTEM_CONSTANT | SYSTEM_FUNCTOR "(" tff_arguments ")"
+tff_defined_infix    : tff_unitary_term INFIX_EQUALITY tff_unitary_term
+tff_system_atomic    : system_constant | SYSTEM_FUNCTOR "(" tff_arguments ")"
 //tff_system_atomic    : SYSTEM_PROPOSITION |                            SYSTEM_PREDICATE"("tff_arguments")"
 tfx_conditional      : DOLLAR_ITE "(" tff_logic_formula "," tff_term "," tff_term ")"
 tfx_let              : DOLLAR_LET "(" tfx_let_types "," tfx_let_defns "," tff_term ")"
@@ -137,19 +137,19 @@ tfx_let_defn         : tfx_let_lhs ASSIGNMENT tff_term
 tfx_let_lhs          : tff_plain_atomic | tfx_tuple
 tfx_let_defn_list    : tfx_let_defn | tfx_let_defn "," tfx_let_defn_list
 
-tff_term             : tff_logic_formula | DEFINED_TERM | tfx_tuple
-tff_unitary_term     : tff_atomic_formula | DEFINED_TERM | tfx_tuple | VARIABLE | "(" tff_logic_formula ")"
+tff_term             : tff_logic_formula | defined_term | tfx_tuple
+tff_unitary_term     : tff_atomic_formula | defined_term | tfx_tuple | VARIABLE | "(" tff_logic_formula ")"
 tfx_tuple            : "[]" | "[" tff_arguments "]"
 
 tff_arguments        : tff_term | tff_term "," tff_arguments
 
-tff_atom_typing      : UNTYPED_ATOM ":" tff_top_level_type | "(" tff_atom_typing ")"
+tff_atom_typing      : untyped_atom ":" tff_top_level_type | "(" tff_atom_typing ")"
 tff_top_level_type   : tff_atomic_type | tff_non_atomic_type
 tff_non_atomic_type  : tff_mapping_type | tf1_quantified_type | "(" tff_non_atomic_type ")"
 tf1_quantified_type  : TH1_QUANTIFIER "[" tff_variable_list "]" ":" tff_monotype
 tff_monotype         : tff_atomic_type | "(" tff_mapping_type ")" | tf1_quantified_type
 tff_unitary_type     : tff_atomic_type | "(" tff_xprod_type ")"
-tff_atomic_type      : TYPE_CONSTANT | DEFINED_TYPE | VARIABLE | TYPE_FUNCTOR "(" tff_type_arguments ")" | "(" tff_atomic_type ")" | tfx_tuple_type 
+tff_atomic_type      : type_constant | DEFINED_TYPE | VARIABLE | TYPE_FUNCTOR "(" tff_type_arguments ")" | "(" tff_atomic_type ")" | tfx_tuple_type 
 tff_type_arguments   : tff_atomic_type | tff_atomic_type "," tff_type_arguments
 tff_mapping_type     : tff_unitary_type ARROW tff_atomic_type
 tff_xprod_type       : tff_unitary_type STAR tff_atomic_type | tff_xprod_type STAR tff_atomic_type
@@ -157,7 +157,7 @@ tff_xprod_type       : tff_unitary_type STAR tff_atomic_type | tff_xprod_type ST
 tfx_tuple_type       : "[" tff_type_list "]"
 tff_type_list        : tff_top_level_type | tff_top_level_type "," tff_type_list
 
-tff_subtype          : UNTYPED_ATOM SUBTYPE_SIGN ATOM 
+tff_subtype          : untyped_atom SUBTYPE_SIGN atom 
 
 tfx_sequent          : tfx_tuple GENTZEN_ARROW tfx_tuple | "(" tfx_sequent ")"
 
@@ -190,18 +190,18 @@ fof_plain_atomic_formula : fof_plain_term
 fof_defined_atomic_formula : fof_defined_plain_formula | fof_defined_infix_formula
 fof_defined_plain_formula : fof_defined_plain_term
 //fof_defined_plain_formula : DEFINED_PROPOSITION | DEFINED_PREDICATE"("fof_arguments")"
-fof_defined_infix_formula : fof_term DEFINED_INFIX_PRED fof_term
+fof_defined_infix_formula : fof_term INFIX_EQUALITY fof_term
 
 fof_system_atomic_formula : fof_system_term
 
-fof_plain_term       : CONSTANT | FUNCTOR "(" fof_arguments ")"
+fof_plain_term       : constant | FUNCTOR "(" fof_arguments ")"
 
-fof_defined_term     : DEFINED_TERM | fof_defined_atomic_term
+fof_defined_term     : defined_term | fof_defined_atomic_term
 fof_defined_atomic_term  : fof_defined_plain_term
 
-fof_defined_plain_term   : DEFINED_CONSTANT | DEFINED_FUNCTOR "(" fof_arguments ")"
+fof_defined_plain_term   : defined_constant | DEFINED_FUNCTOR "(" fof_arguments ")"
 
-fof_system_term      : SYSTEM_CONSTANT | SYSTEM_FUNCTOR "(" fof_arguments ")"
+fof_system_term      : system_constant | SYSTEM_FUNCTOR "(" fof_arguments ")"
 
 fof_arguments        : fof_term | fof_term "," fof_arguments
 
@@ -233,15 +233,15 @@ AND_CONNECTIVE       : "&"
 GENTZEN_ARROW        : "-->"
 ASSIGNMENT           : ":="
 
-TYPE_CONSTANT        : TYPE_FUNCTOR
+type_constant        : TYPE_FUNCTOR
 TYPE_FUNCTOR         : ATOMIC_WORD
 DEFINED_TYPE         : ATOMIC_DEFINED_WORD
 //DEFINED_TYPE         : "$"otype | "$"o | "$"itype | "$"i | "$"ttype | "$"REAL | "$"rat | "$"int
 
 //SYSTEM_TYPE          : ATOMIC_SYSTEM_WORD
 
-ATOM                 : UNTYPED_ATOM | DEFINED_CONSTANT
-UNTYPED_ATOM         : CONSTANT | SYSTEM_CONSTANT
+atom                 : untyped_atom | defined_constant
+untyped_atom         : constant | system_constant
 
 // PROPOSITION          : PREDICATE
 // PREDICATE            : ATOMIC_WORD
@@ -252,22 +252,23 @@ UNTYPED_ATOM         : CONSTANT | SYSTEM_CONSTANT
 //                       | "$"is_rat | "$"box_p | "$"box_i | "$"box_int | "$"box | "$"dia_p 
 //                        | "$"dia_i | "$"dia_int | "$"dia
 
-DEFINED_INFIX_PRED   : INFIX_EQUALITY
+// defined_infix_predの使用部分をINFIX_EQUALITYに置き換えました
+defined_infix_pred   : INFIX_EQUALITY
 // SYSTEM_PROPOSITION   : SYSTEM_PREDICATE
 // SYSTEM_PREDICATE     : ATOMIC_SYSTEM_WORD
 INFIX_EQUALITY       : "="
 INFIX_INEQUALITY     : "!="
 
-CONSTANT             : FUNCTOR
+constant             : FUNCTOR
 FUNCTOR              : ATOMIC_WORD
-SYSTEM_CONSTANT      : SYSTEM_FUNCTOR
+system_constant      : SYSTEM_FUNCTOR
 SYSTEM_FUNCTOR       : ATOMIC_SYSTEM_WORD
-DEFINED_CONSTANT     : DEFINED_FUNCTOR
+defined_constant     : DEFINED_FUNCTOR
 DEFINED_FUNCTOR      : ATOMIC_DEFINED_WORD
 //DEFINED_FUNCTOR      : "$"uminus | "$"sum | "$"difference | "$"product | "$"quotient | "$"quotient_e | "$"quotient_t | "$"quotient_f | "$"remainder_e | "$"remainder_t | "$"remainder_f 
 //                        | "$"floor | "$"ceiling | "$"truncate | "$"round | "$"to_int | "$"to_rat | "$"to_real
 TH1_DEFINED_TERM     : "!!" | "??" | "@@+" | "@@-" | "@="
-DEFINED_TERM         : NUMBER | DISTINCT_OBJECT
+defined_term         : number | DISTINCT_OBJECT
 VARIABLE             : UPPER_WORD
 
 source               : general_term
@@ -328,7 +329,7 @@ formula_selection    : "," "[" name_list "]" | null
 name_list            : NAME | NAME name_list
 
 general_term         : general_data | general_data ":" general_term | general_list
-general_data         : ATOMIC_WORD | general_function | VARIABLE | NUMBER | DISTINCT_OBJECT | formula_data
+general_data         : ATOMIC_WORD | general_function | VARIABLE | number | DISTINCT_OBJECT | formula_data
 general_function     : ATOMIC_WORD "(" general_terms ")"
 
 //general_data         : "bind" "("VARIABLE "," formula_data")" | "bind_type" "("VARIABLE "," bound_type")"
@@ -360,7 +361,7 @@ ATOMIC_WORD          : LOWER_WORD |  SINGLE_QUOTED
 
 ATOMIC_DEFINED_WORD  : DOLLAR_WORD
 ATOMIC_SYSTEM_WORD   : DOLLAR_DOLLAR_WORD
-NUMBER               : INTEGER | RATIONAL | REAL
+number               : INTEGER | RATIONAL | REAL
 
 FILE_NAME            :  SINGLE_QUOTED
 null                 :
