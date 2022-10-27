@@ -44,7 +44,7 @@ thf_plain_atomic     : constant | thf_tuple
 
 thf_defined_atomic   : defined_constant | thf_conditional | thf_let | "(" thf_conn_term ")" | thf_defined_term
 thf_defined_term     : defined_term | TH1_DEFINED_TERM
-thf_defined_infix    : thf_unitary_term defined_infix_pred thf_unitary_term
+thf_defined_infix    : thf_unitary_term INFIX_EQUALITY thf_unitary_term
 
 thf_system_atomic    : system_constant
 
@@ -125,7 +125,7 @@ tff_defined_atomic   : tff_defined_plain
 tff_defined_plain    : defined_constant | DEFINED_FUNCTOR "(" tff_arguments ")" | tfx_conditional | tfx_let
 //tff_defined_plain    : DEFINED_PROPOSITION | DEFINED_PREDICATE"("tff_arguments")" | tfx_conditional | tfx_let
 
-tff_defined_infix    : tff_unitary_term defined_infix_pred tff_unitary_term
+tff_defined_infix    : tff_unitary_term INFIX_EQUALITY tff_unitary_term
 tff_system_atomic    : system_constant | SYSTEM_FUNCTOR "(" tff_arguments ")"
 //tff_system_atomic    : SYSTEM_PROPOSITION |                            SYSTEM_PREDICATE"("tff_arguments")"
 tfx_conditional      : DOLLAR_ITE "(" tff_logic_formula "," tff_term "," tff_term ")"
@@ -190,7 +190,7 @@ fof_plain_atomic_formula : fof_plain_term
 fof_defined_atomic_formula : fof_defined_plain_formula | fof_defined_infix_formula
 fof_defined_plain_formula : fof_defined_plain_term
 //fof_defined_plain_formula : DEFINED_PROPOSITION | DEFINED_PREDICATE"("fof_arguments")"
-fof_defined_infix_formula : fof_term defined_infix_pred fof_term
+fof_defined_infix_formula : fof_term INFIX_EQUALITY fof_term
 
 fof_system_atomic_formula : fof_system_term
 
@@ -252,6 +252,7 @@ untyped_atom         : constant | system_constant
 //                       | "$"is_rat | "$"box_p | "$"box_i | "$"box_int | "$"box | "$"dia_p 
 //                        | "$"dia_i | "$"dia_int | "$"dia
 
+// defined_infix_predの使用部分をINFIX_EQUALITYに置き換えました
 defined_infix_pred   : INFIX_EQUALITY
 // SYSTEM_PROPOSITION   : SYSTEM_PREDICATE
 // SYSTEM_PREDICATE     : ATOMIC_SYSTEM_WORD
