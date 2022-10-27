@@ -72,12 +72,11 @@ NODE_KEEP_RULE = {
     "thf_variable_list": {"parent": "thf_quantification"},
     # with child condition
     "cnf_annotated": {"child": "CNF"},
-    "defined_infix_pred": {"child": "INFIX_EQUALITY"},
     "disjunction": {"child": "VLINE"},
     "fof_and_formula": {"child": "AND_CONNECTIVE"},
     "fof_annotated": {"child": "FOF"},
     "fof_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
-    "fof_defined_infix_formula": {"child": "defined_infix_pred"},
+    "fof_defined_infix_formula": {"child": "INFIX_EQUALITY"},
     "fof_defined_plain_term": {"child": "DEFINED_FUNCTOR"},
     "fof_infix_unary": {"child": "INFIX_INEQUALITY"},
     "fof_or_formula": {"child": "VLINE"},
@@ -96,7 +95,7 @@ NODE_KEEP_RULE = {
     "tff_annotated": {"child": "TFF"},
     "tff_atomic_type": {"child": "TYPE_FUNCTOR"},
     "tff_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
-    "tff_defined_infix": {"child": "defined_infix_pred"},
+    "tff_defined_infix": {"child": "INFIX_EQUALITY"},
     "tff_defined_plain": {"child": "DEFINED_FUNCTOR"},
     "tff_infix_unary": {"child": "INFIX_INEQUALITY"},
     "tfx_let_defn": {"child": "ASSIGNMENT"},
@@ -115,7 +114,7 @@ NODE_KEEP_RULE = {
     "thf_apply_formula": {"child": "APPLY_SYMBOL"},
     "thf_binary_nonassoc": {"child": "NONASSOC_CONNECTIVE"},
     "thf_conditional": {"child": "DOLLAR_ITE"},
-    "thf_defined_infix": {"child": "defined_infix_pred"},
+    "thf_defined_infix": {"child": "INFIX_EQUALITY"},
     "thf_fof_function": {"child": ["FUNCTOR", "DEFINED_FUNCTOR", "SYSTEM_FUNCTOR"]},
     "thf_infix_unary": {"child": "INFIX_INEQUALITY"},
     "thf_let": {"child": "DOLLAR_LET"},
@@ -234,8 +233,7 @@ class ParseTstp():
 
         # 3.NODE_KEEP_RULEにノード名があり，子ノード名も条件を満たす場合
         # この場合，子トークンから情報を引き継ぐ
-        keep_condition3 = self.__is_inherit_child_token_info(
-            node) and len(node.children) > 1
+        keep_condition3 = self.__is_inherit_child_token_info(node)
 
         return keep_condition1 or keep_condition2 or keep_condition3
 
@@ -321,44 +319,6 @@ class ParseTstp():
         else:
             return False
 
-    def __satisfy_child_tree_inherit_condition(self, node):
-        """__satisfy_child_tree_inherit_condition
-
-        具象構文木の子のノードを上に上げて子のノードを継承するかどうか判定する関数
-
-        Args:
-            node (Tree): 具象構文木のノード
-
-        Returns:
-            (bool): 具象構文木の子のノードを上に上げるならTrue、そうでないならFalse
-        """
-        children_data = {
-            child.data for child in node.children if type(child) == Tree}
-        return self.__is_exist_child_condition(node.data) and \
-            {NODE_KEEP_RULE[node.data]["child"]} & children_data
-
-    def __get_child_match_rule(self, node):
-        """__get_child_match_rule
-
-        入力ノードの子の中でルールに合致する子を返す関数
-
-        Args:
-            node (Tree): 具象構文木のノード
-
-        Returns:
-            child (Tree): 入力ノードの子の中でルールに合致するノード
-        """
-        children_data = list()
-        for child in node.children:
-            if type(child) == Tree:
-                children_data.append(child.data)
-            else:
-                children_data.append(child.type)
-        child_index = children_data.index(
-            NODE_KEEP_RULE[node.data]["child"])
-        child = node.children[child_index]
-        return child
-
     def convert_cst2ast(self,
                         cst,
                         cst_parent_name=None,
@@ -405,15 +365,7 @@ class ParseTstp():
                 self.__add_ast_child_node(
                     inherit_node, ast_parent_id, ast_handler)
                 ast_next_parent_id = ast_handler.get_last_node()
-            elif self.__satisfy_child_tree_inherit_condition(cst):
-                child = self.__get_child_match_rule(cst)
-                while type(child) == Tree:
-                    assert len(child.children) == 1
-                    child = child.children[0]
-                inherit_node = child
-                self.__add_ast_child_node(
-                    inherit_node, ast_parent_id, ast_handler)
-                ast_next_parent_id = ast_handler.get_last_node()
+
             for child in cst.children:
                 self.convert_cst2ast(
                     child, cst_name, ast_next_parent_id, ast_handler)
