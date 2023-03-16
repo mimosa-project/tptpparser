@@ -7,11 +7,9 @@ from torch_geometric.nn import global_add_pool
 
 
 class NN(nn.Module):
-    def __init__(self, vocab, embedding_size, hidden_size, output_size):
+    def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(NN, self).__init__()
-        self.vocab = vocab
-        self.vocab_size = len(vocab)
-        self.embed = nn.Embedding(self.vocab_size, embedding_size)
+        self.embed = nn.Embedding(input_size, embedding_size)
         self.fc1 = nn.Linear(embedding_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, output_size)
 
@@ -38,11 +36,9 @@ class NNTermWalk(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, vocab, embedding_size, hidden_size, output_size):
+    def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(CNN, self).__init__()
-        self.vocab = vocab
-        self.vocab_size = len(vocab)
-        self.embed = nn.Embedding(self.vocab_size, embedding_size)
+        self.embed = nn.Embedding(input_size, embedding_size)
         self.conv = nn.Conv1d(embedding_size, hidden_size, 3, padding=1)
         self.out = nn.Linear(hidden_size, output_size)
 
@@ -72,11 +68,9 @@ class CNNTermWalk(nn.Module):
 
 
 class RNN(nn.Module):
-    def __init__(self, vocab, embedding_size, hidden_size, output_size):
+    def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(RNN, self).__init__()
-        self.vocab = vocab
-        self.vocab_size = len(vocab)
-        self.embed = nn.Embedding(self.vocab_size, embedding_size)
+        self.embed = nn.Embedding(input_size, embedding_size)
         self.rnn = nn.RNN(embedding_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, output_size)
 
@@ -102,11 +96,9 @@ class RNNTermWalk(nn.Module):
 
 
 class LSTM(nn.Module):
-    def __init__(self, vocab, embedding_size, hidden_size, output_size):
+    def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(LSTM, self).__init__()
-        self.vocab = vocab
-        self.vocab_size = len(vocab)
-        self.embed = nn.Embedding(self.vocab_size, embedding_size)
+        self.embed = nn.Embedding(input_size, embedding_size)
         self.rnn = nn.LSTM(embedding_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, output_size)
 
