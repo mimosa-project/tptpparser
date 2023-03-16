@@ -66,8 +66,8 @@ def train(model, dataloader, criterion, optimizer):
     return average_loss, average_r2_score
 
 
-def evel(model, dataloader, criterion):
-    """evel
+def eval(model, dataloader, criterion):
+    """eval
 
     与えられたデータで指定されたモデルを評価する関数
 
@@ -150,7 +150,7 @@ def lean_model(model, train_loader, test_loader, criterion, optimizer, epochs):
         loss, r2 = train(model, train_loader, criterion, optimizer)
         train_loss.append(loss)
         train_r2.append(r2)
-        loss, r2 = evel(model, test_loader, criterion)
+        loss, r2 = eval(model, test_loader, criterion)
         test_loss.append(loss)
         test_r2.append(r2)
         print(
@@ -198,8 +198,8 @@ def train_gcn(model, dataloader, criterion, optimizer):
     return average_loss, average_r2_score
 
 
-def evel_gcn(model, dataloader, criterion):
-    """evel_gcn
+def eval_gcn(model, dataloader, criterion):
+    """eval_gcn
 
     与えられたデータで指定されたGCNモデルを評価する関数
 
@@ -277,7 +277,7 @@ def lean_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
         loss, r2 = train_gcn(model, train_loader, criterion, optimizer)
         train_loss.append(loss)
         train_r2.append(r2)
-        loss, r2 = evel_gcn(model, test_loader, criterion)
+        loss, r2 = eval_gcn(model, test_loader, criterion)
         test_loss.append(loss)
         test_r2.append(r2)
         print(
