@@ -25,7 +25,7 @@ class TptpProblemSelector():
     def run_vampire_clausify(self, problem_path):
         """run_vampire_clausify
 
-        vampireを実行し、その結果から節を取得する関数
+        clausifyモードでvampireを実行し、その結果から節を取得する関数
 
         Args:
             problem_path (str): Vampireに渡す問題ファイルのパス
@@ -99,16 +99,16 @@ class TptpProblemSelector():
             problem_cst = self.parse_tstp.parse(problem)
             included_files = self.get_included_files(problem_cst)
             if not included_files:
-                continue
+                axiom_set2theorems[""].append(problem_file_path)
             included_files.sort()
             included_files_text = ",".join(map(str, included_files))
             axiom_set2theorems[included_files_text].append(problem_file_path)
         return axiom_set2theorems
 
-    def remove_axiom_set_under_10(self, axiom_set2theorems):
-        """remove_axiom_set_under_10
+    def remove_theorems_under_10(self, axiom_set2theorems):
+        """remove_theorems_under_10
 
-        使用している公理ファイルセットが10個未満のものを削除する関数
+        定理ファイルが10個未満のものを削除する関数
 
         Args:
             axiom_set2theorems (dict): 公理ファイルセットをkey、そのセットを使用している問題ファイルをvalueとした辞書
