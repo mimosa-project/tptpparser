@@ -7,7 +7,7 @@ from early_stopping import EarlyStopping
 
 
 # リソースの選択（CPU/GPU）
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def fix_seed(seed):
@@ -29,8 +29,8 @@ def fix_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-seed = 42
-fix_seed(seed)
+SEED = 42
+fix_seed(SEED)
 
 
 def train(model, dataloader, criterion, optimizer):
@@ -52,15 +52,15 @@ def train(model, dataloader, criterion, optimizer):
     total_loss = 0
     r2 = 0
     for X, y in dataloader:
-        X = X.to(device)
-        y = y.to(device)
+        X = X.to(DEVICE)
+        y = y.to(DEVICE)
         optimizer.zero_grad()
         output = model(X)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-        r2 += r2_score(y_pred=output.tolist(), y_true=y.tolist())
+        r2 += r2_score(y_pred=output.tolist(), y_correct=y.tolist())
     average_loss = total_loss / len(dataloader)
     average_r2_score = r2 / len(dataloader)
     return average_loss, average_r2_score
@@ -84,12 +84,12 @@ def eval(model, dataloader, criterion):
     total_loss = 0
     r2 = 0
     for X, y in dataloader:
-        X = X.to(device)
-        y = y.to(device)
+        X = X.to(DEVICE)
+        y = y.to(DEVICE)
         output = model(X)
         loss = criterion(output, y)
         total_loss += loss.item()
-        r2 += r2_score(y_pred=output.tolist(), y_true=y.tolist())
+        r2 += r2_score(y_pred=output.tolist(), y_correct=y.tolist())
     average_loss = total_loss / len(dataloader)
     average_r2_score = r2 / len(dataloader)
     return average_loss, average_r2_score
@@ -106,18 +106,18 @@ def predict(model, dataloader):
 
     Returns:
         y_pred (list): 予測値
-        y_true (list): 正解値
+        y_correct (list): 正解値
     """
     model.eval()
     y_pred = []
-    y_true = []
+    y_correct = []
     for X, y in dataloader:
-        X = X.to(device)
-        y = y.to(device)
+        X = X.to(DEVICE)
+        y = y.to(DEVICE)
         output = model(X)
         y_pred.extend(output.tolist())
-        y_true.extend(y.tolist())
-    return y_pred, y_true
+        y_correct.extend(y.tolist())
+    return y_pred, y_correct
 
 
 def learn_model(model, train_loader, test_loader, criterion, optimizer, epochs):
@@ -139,7 +139,7 @@ def learn_model(model, train_loader, test_loader, criterion, optimizer, epochs):
         train_r2 (list): 訓練データのR2スコア
         test_r2 (list): テストデータのR2スコア
         pred (list): 予測値
-        true (list): 正解値
+        correct (list): 正解値
     """
     train_loss = []
     test_loss = []
@@ -163,8 +163,8 @@ def learn_model(model, train_loader, test_loader, criterion, optimizer, epochs):
         if early_stopping.early_stop:
             print("Early stopping")
             break
-    pred, true = predict(model, test_loader)
-    return train_loss, test_loss, train_r2, test_r2, pred, true
+    pred, correct = predict(model, test_loader)
+    return train_loss, test_loss, train_r2, test_r2, pred, correct
 
 
 def train_gcn(model, dataloader, criterion, optimizer):
@@ -192,7 +192,7 @@ def train_gcn(model, dataloader, criterion, optimizer):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-        r2 += r2_score(y_pred=output.tolist(), y_true=data.y.tolist())
+        r2 += r2_score(y_pred=output.tolist(), y_correct=data.y.tolist())
     average_loss = total_loss / len(dataloader)
     average_r2_score = r2 / len(dataloader)
     return average_loss, average_r2_score
@@ -219,7 +219,7 @@ def eval_gcn(model, dataloader, criterion):
         output = model(data)
         loss = criterion(output, data.y)
         total_loss += loss.item()
-        r2 += r2_score(y_pred=output.tolist(), y_true=data.y.tolist())
+        r2 += r2_score(y_pred=output.tolist(), y_correct=data.y.tolist())
     average_loss = total_loss / len(dataloader)
     average_r2_score = r2 / len(dataloader)
     return average_loss, average_r2_score
@@ -239,12 +239,12 @@ def predict_gcn(model, dataloader):
     """
     model.eval()
     y_pred = []
-    y_true = []
+    y_correct = []
     for data in dataloader:
         output = model(data)
         y_pred.extend(output.tolist())
-        y_true.extend(data.y.tolist())
-    return y_pred, y_true
+        y_correct.extend(data.y.tolist())
+    return y_pred, y_correct
 
 
 def learn_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
@@ -266,7 +266,7 @@ def learn_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
         train_r2 (list): 訓練データのR2スコア
         test_r2 (list): テストデータのR2スコア
         pred (list): 予測値
-        true (list): 正解値
+        correct (list): 正解値
     """
     train_loss = []
     test_loss = []
@@ -290,5 +290,5 @@ def learn_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
         if early_stopping.early_stop:
             print("Early stopping")
             break
-    pred, true = predict_gcn(model, test_loader)
-    return train_loss, test_loss, train_r2, test_r2, pred, true
+    pred, correct = predict_gcn(model, test_loader)
+    return train_loss, test_loss, train_r2, test_r2, pred, correct
