@@ -7,6 +7,17 @@ from torch_geometric.nn import global_add_pool
 
 
 class NN(nn.Module):
+    """NN
+
+    ニューラルネットワークのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        embedding_size (int): 単語の埋め込み次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(NN, self).__init__()
         self.embed = nn.Embedding(input_size, embedding_size)
@@ -23,6 +34,16 @@ class NN(nn.Module):
 
 
 class NNTermWalk(nn.Module):
+    """NNTermWalk
+
+    term walk用ニューラルネットワークのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, hidden_size, output_size):
         super(NNTermWalk, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
@@ -36,10 +57,23 @@ class NNTermWalk(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, input_size, embedding_size, hidden_size, output_size):
+    """CNN
+
+    CNNのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        embedding_size (int): 単語の埋め込み次元数
+        hidden_size (int): 隠れ層の次元数
+        conv_size (int): 畳み込みのサイズ
+        output_size (int): 出力の次元数
+    """
+
+    def __init__(self, input_size, embedding_size, hidden_size, conv_size, output_size):
         super(CNN, self).__init__()
         self.embed = nn.Embedding(input_size, embedding_size)
-        self.conv = nn.Conv1d(embedding_size, hidden_size, 3, padding=1)
+        self.conv = nn.Conv1d(embedding_size, hidden_size,
+                              conv_size, padding=1)
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
@@ -53,9 +87,20 @@ class CNN(nn.Module):
 
 
 class CNNTermWalk(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    """CNNTermWalk
+
+    term walk用CNNのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        hidden_size (int): 隠れ層の次元数
+        conv_size (int): 畳み込みのサイズ
+        output_size (int): 出力の次元数
+    """
+
+    def __init__(self, input_size, hidden_size, conv_size, output_size):
         super(CNNTermWalk, self).__init__()
-        self.conv = nn.Conv1d(input_size, hidden_size, 3, padding=1)
+        self.conv = nn.Conv1d(input_size, hidden_size, conv_size, padding=1)
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
@@ -68,6 +113,17 @@ class CNNTermWalk(nn.Module):
 
 
 class RNN(nn.Module):
+    """RNN
+
+    RNNのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        embedding_size (int): 単語の埋め込み次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(RNN, self).__init__()
         self.embed = nn.Embedding(input_size, embedding_size)
@@ -83,6 +139,16 @@ class RNN(nn.Module):
 
 
 class RNNTermWalk(nn.Module):
+    """RNNTermWalk
+
+    term walk用RNNのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, hidden_size, output_size):
         super(RNNTermWalk, self).__init__()
         self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
@@ -96,38 +162,70 @@ class RNNTermWalk(nn.Module):
 
 
 class LSTM(nn.Module):
+    """LSTM
+
+    LSTMのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        embedding_size (int): 単語の埋め込み次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, embedding_size, hidden_size, output_size):
         super(LSTM, self).__init__()
         self.embed = nn.Embedding(input_size, embedding_size)
-        self.rnn = nn.LSTM(embedding_size, hidden_size, batch_first=True)
+        self.lstm = nn.LSTM(embedding_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x, state=None):
         x = self.embed(x)
-        x, (h, c) = self.rnn(x, state)
+        x, (h, c) = self.lstm(x, state)
         x = self.out(x.mean(dim=1))
         return x
 
 
 class LSTMTermWalk(nn.Module):
+    """LSTMTermWalk
+
+    term walk用LSTMのモデルを定義するクラス
+
+    Attributes:
+        input_size (int): 入力の次元数
+        hidden_size (int): 隠れ層の次元数
+        output_size (int): 出力の次元数
+    """
+
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMTermWalk, self).__init__()
-        self.rnn = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(self, x, state=None):
-        x, (h, c) = self.rnn(x, state)
+        x, (h, c) = self.lstm(x, state)
         x = self.out(x)
         return x
 
 
 class GCN(torch.nn.Module):
-    def __init__(self, n_features, n_conv_hidden, n_mlp_hidden):
+    """GCN
+
+    GCNのモデルを定義するクラス
+
+    Attributes:
+        n_features (int): 入力の次元数
+        n_conv_hidden (int): GCNの隠れ層の数
+        dim (int): GCNの次元数
+        n_mlp_hidden (int): MLPの隠れ層の数
+    """
+
+    def __init__(self, n_features, n_conv_hidden, dim, n_mlp_hidden):
         super(GCN, self).__init__()
         self.n_features = n_features
         self.n_conv_hidden = n_conv_hidden
         self.n_mlp_hidden = n_mlp_hidden
-        self.dim = 64
+        self.dim = dim
         self.graphconv1 = GCNConv(self.n_features, self.dim)
         self.bn1 = BatchNorm1d(self.dim)
         self.graphconv_hidden = ModuleList(
