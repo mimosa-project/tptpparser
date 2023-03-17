@@ -120,8 +120,8 @@ def predict(model, dataloader):
     return y_pred, y_true
 
 
-def lean_model(model, train_loader, test_loader, criterion, optimizer, epochs):
-    """lean_model
+def learn_model(model, train_loader, test_loader, criterion, optimizer, epochs):
+    """learn_model
 
     与えられたデータで指定されたモデルを訓練・評価する関数
 
@@ -247,8 +247,8 @@ def predict_gcn(model, dataloader):
     return y_pred, y_true
 
 
-def lean_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
-    """lean_gcn
+def learn_gcn(model, train_loader, test_loader, criterion, optimizer, epochs):
+    """learn_gcn
 
     与えられたデータで指定されたGCNモデルを訓練・評価する関数
 
